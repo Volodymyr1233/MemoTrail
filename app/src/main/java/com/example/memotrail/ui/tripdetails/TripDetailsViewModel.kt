@@ -39,9 +39,10 @@ class TripDetailsViewModel(
         _uiState.update { it.copy(selectedDayId = dayId) }
     }
 
-    fun addOrUpdateDay(day: TripDayEntity) {
+    fun addOrUpdateDay(day: TripDayEntity, onSaved: ((Long) -> Unit)? = null) {
         viewModelScope.launch {
             val savedId = tripRepository.upsertDay(day)
+            onSaved?.invoke(savedId)
             if (_uiState.value.selectedDayId == null) {
                 selectDay(savedId)
             }

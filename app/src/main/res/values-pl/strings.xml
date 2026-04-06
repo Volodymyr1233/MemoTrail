@@ -1,0 +1,42 @@
+<resources>
+    <string name="app_name">MemoTrail</string>
+    <string name="google_maps_api_key">REPLACE_WITH_YOUR_GOOGLE_MAPS_KEY</string>
+
+    <string name="add_trip_title">Utworz nowa podroz</string>
+    <string name="edit_trip_title">Edytuj podroz</string>
+    <string name="trip_title_label">Tytul podrozy</string>
+    <string name="from_date_label">Data od</string>
+    <string name="to_date_label">Data do</string>
+    <string name="date_range_label">Zakres dat</string>
+    <string name="location_label">Lokalizacja</string>
+    <string name="specific_location_label">Szczegolowa lokalizacja</string>
+    <string name="tags_label">Tagi (oddzielone przecinkami)</string>
+    <string name="preview_image_label">Obraz podgladowy</string>
+    <string name="trip_preview_content_description">Podglad podrozy</string>
+    <string name="remove_image">Usun obraz</string>
+    <string name="confirm">Potwierdz</string>
+    <string name="cancel">Anuluj</string>
+
+    <string name="settings_title">Ustawienia</string>
+    <string name="appearance_title">Wyglad</string>
+    <string name="dark_mode_label">Tryb ciemny</string>
+    <string name="language_title">Jezyk</string>
+    <string name="about_title">O aplikacji</string>
+    <string name="version_label">Wersja</string>
+    <string name="privacy_policy_label">Polityka prywatnosci</string>
+    <string name="licenses_label">Licencje</string>
+
+    <string name="view_trip">Zobacz podroz</string>
+    <string name="day_date_label">Data dnia</string>
+    <string name="notes_label">Notatki</string>
+    <string name="add_photos_videos">Dodaj zdjecia/wideo</string>
+    <string name="audio_notes">Notatki audio</string>
+    <string name="images_label">Zdjecia</string>
+    <string name="videos_label">Wideo</string>
+    <string name="delete_item">Usun element</string>
+
+    <string name="audio_notes_add_title">Notatki audio (zarzadzanie)</string>
+    <string name="audio_note_default_title">Notatka audio #%1$d</string>
+    <string name="audio_recording_placeholder_hint">Nagrywanie mozna podlaczyc przez MediaRecorder w kolejnym kroku.</string>
+</resources>
+

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -20,6 +21,8 @@ class DashboardViewModel(
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
+    private val locationFilter = MutableStateFlow<String?>(null)
+    private val sortOption = MutableStateFlow(TripSortOption.DATE_DESC)
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -37,6 +40,22 @@ class DashboardViewModel(
         searchQuery.value = _uiState.value.query.trim()
     }
 
+    fun onSortByDate() {
+        sortOption.value = TripSortOption.DATE_DESC
+        _uiState.update { it.copy(sortOption = TripSortOption.DATE_DESC) }
+    }
+
+    fun onSortByLocation() {
+        sortOption.value = TripSortOption.LOCATION_ASC
+        _uiState.update { it.copy(sortOption = TripSortOption.LOCATION_ASC) }
+    }
+
+    fun onLocationFilterChanged(locationName: String?) {
+        val normalized = locationName?.takeIf { it.isNotBlank() }
+        locationFilter.value = normalized
+        _uiState.update { it.copy(locationFilter = normalized) }
+    }
+
     fun deleteTrip(trip: TripEntity) {
         viewModelScope.launch {
             tripRepository.deleteTrip(trip)
@@ -51,6 +70,21 @@ class DashboardViewModel(
                         tripRepository.observeTrips()
                     } else {
                         tripRepository.searchTrips(query)
+                    }
+                }
+                .combine(locationFilter) { trips, selectedLocation ->
+                    if (selectedLocation == null) {
+                        trips
+                    } else {
+                        trips.filter {
+                            it.locationName.equals(selectedLocation, ignoreCase = true)
+                        }
+                    }
+                }
+                .combine(sortOption) { trips, selectedSort ->
+                    when (selectedSort) {
+                        TripSortOption.DATE_DESC -> trips.sortedByDescending { it.startDateEpochDay }
+                        TripSortOption.LOCATION_ASC -> trips.sortedBy { it.locationName.lowercase() }
                     }
                 }
                 .catch { throwable ->
