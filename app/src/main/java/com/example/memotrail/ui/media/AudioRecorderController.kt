@@ -57,6 +57,11 @@ class AudioRecorderController(
         }
     }
 
+    fun readAmplitude(): Int {
+        val recorder = mediaRecorder ?: return 0
+        return runCatching { recorder.maxAmplitude }.getOrDefault(0)
+    }
+
     fun release() {
         mediaRecorder?.release()
         mediaRecorder = null

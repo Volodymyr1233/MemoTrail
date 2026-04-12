@@ -25,8 +25,8 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -70,6 +70,8 @@ fun AudioNotesScreen(
     var isPlaying by remember { mutableStateOf(false) }
     var currentMs by remember { mutableLongStateOf(0L) }
     var durationMs by remember { mutableLongStateOf(0L) }
+    var isScrubbing by remember { mutableStateOf(false) }
+    var scrubMs by remember { mutableLongStateOf(0L) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -83,6 +85,7 @@ fun AudioNotesScreen(
                 }
                 if (playbackState == Player.STATE_ENDED) {
                     isPlaying = false
+                    isScrubbing = false
                     currentMs = durationMs
                 }
             }
@@ -94,17 +97,20 @@ fun AudioNotesScreen(
         }
     }
 
-    LaunchedEffect(isPlaying, activeNoteId) {
-        while (isPlaying) {
-            currentMs = player.currentPosition.coerceAtLeast(0L)
-            durationMs = player.duration.coerceAtLeast(0L)
+    LaunchedEffect(activeNoteId) {
+        while (activeNoteId != null) {
+            if (!isScrubbing) {
+                currentMs = player.currentPosition.coerceAtLeast(0L)
+                durationMs = player.duration.coerceAtLeast(0L)
+            }
             delay(200)
         }
     }
 
     val activeNote = notes.firstOrNull { it.id == activeNoteId } ?: notes.firstOrNull()
-    val progress = remember(currentMs, durationMs) {
-        if (durationMs <= 0L) 0f else (currentMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+    val displayedCurrentMs = if (isScrubbing) scrubMs else currentMs
+    val progress = remember(displayedCurrentMs, durationMs) {
+        if (durationMs <= 0L) 0f else (displayedCurrentMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
     }
 
     fun togglePlay(note: MediaEntryEntity) {
@@ -120,10 +126,26 @@ fun AudioNotesScreen(
 
         activeNoteId = note.id
         currentMs = 0L
+        scrubMs = 0L
+        isScrubbing = false
         durationMs = note.durationMs ?: 0L
         player.setMediaItem(MediaItem.fromUri(uri))
         player.prepare()
         player.playWhenReady = true
+    }
+
+    fun onSeekChanged(newPositionMs: Float) {
+        if (durationMs <= 0L) return
+        isScrubbing = true
+        scrubMs = newPositionMs.toLong().coerceIn(0L, durationMs)
+    }
+
+    fun onSeekFinished() {
+        if (!isScrubbing) return
+        val target = scrubMs.coerceIn(0L, durationMs.coerceAtLeast(0L))
+        player.seekTo(target)
+        currentMs = target
+        isScrubbing = false
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -140,9 +162,13 @@ fun AudioNotesScreen(
             AudioPlayerCard(
                 title = current.caption ?: "Audio note",
                 progress = progress,
-                currentTime = formatPlaybackTime(currentMs),
+                currentTime = formatPlaybackTime(displayedCurrentMs),
                 totalTime = formatPlaybackTime(if (durationMs > 0) durationMs else (current.durationMs ?: 0L)),
                 isPlaying = isPlaying,
+                positionMs = displayedCurrentMs,
+                durationMs = durationMs,
+                onSeekChanged = ::onSeekChanged,
+                onSeekFinished = ::onSeekFinished,
                 onPlayPause = { togglePlay(current) },
                 modifier = Modifier.padding(16.dp)
             )
@@ -188,6 +214,10 @@ fun AudioPlayerCard(
     currentTime: String,
     totalTime: String,
     isPlaying: Boolean,
+    positionMs: Long,
+    durationMs: Long,
+    onSeekChanged: (Float) -> Unit,
+    onSeekFinished: () -> Unit,
     onPlayPause: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -198,7 +228,13 @@ fun AudioPlayerCard(
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Waveform(progress = progress, modifier = Modifier.fillMaxWidth().height(48.dp))
-            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+            Slider(
+                value = positionMs.toFloat(),
+                onValueChange = onSeekChanged,
+                valueRange = 0f..durationMs.coerceAtLeast(1L).toFloat(),
+                onValueChangeFinished = onSeekFinished,
+                modifier = Modifier.fillMaxWidth()
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
