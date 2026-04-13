@@ -1,11 +1,6 @@
 package com.example.memotrail.ui.tripform
 
-import android.app.Activity
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,7 +21,10 @@ import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,13 +51,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.memotrail.R
+import com.example.memotrail.ui.common.PlaceSuggestion
+import com.example.memotrail.ui.common.fetchPredictions
+import com.example.memotrail.ui.common.fetchSelectedPlace
 import com.example.memotrail.ui.common.formatEpochDay
 import com.google.android.libraries.places.api.Places
-import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.widget.Autocomplete
-import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
 
 @Composable
@@ -71,19 +71,44 @@ fun TripFormRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val placesClient = remember(context) {
+        if (Places.isInitialized()) Places.createClient(context) else null
+    }
+
+    var predictions by remember { mutableStateOf<List<PlaceSuggestion>>(emptyList()) }
+    var isPredictionsLoading by remember { mutableStateOf(false) }
+    var placesError by remember { mutableStateOf<String?>(null) }
 
     var showFromDatePicker by remember { mutableStateOf(false) }
     var showToDatePicker by remember { mutableStateOf(false) }
 
-    val placesLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val place = Autocomplete.getPlaceFromIntent(result.data ?: Intent())
-            viewModel.onLocationChanged(
-                value = place.name.orEmpty(),
-                lat = place.latLng?.latitude,
-                lng = place.latLng?.longitude
-            )
+    LaunchedEffect(uiState.locationName, placesClient) {
+        val client = placesClient ?: run {
+            predictions = emptyList()
+            isPredictionsLoading = false
+            placesError = context.getString(R.string.places_unavailable)
+            return@LaunchedEffect
         }
+
+        val query = uiState.locationName.trim()
+        if (query.length < 2) {
+            predictions = emptyList()
+            isPredictionsLoading = false
+            placesError = null
+            return@LaunchedEffect
+        }
+
+        delay(500)
+        isPredictionsLoading = true
+        placesError = null
+        predictions = try {
+            client.fetchPredictions(query)
+        } catch (_: Exception) {
+            placesError = context.getString(R.string.places_fetch_failed)
+            emptyList()
+        }
+        isPredictionsLoading = false
     }
 
     LaunchedEffect(tripIdForEdit) {
@@ -107,6 +132,10 @@ fun TripFormRoute(
         toDate = formatEpochDay(uiState.endDateEpochDay),
         dateRangeLabel = dateRangeLabel,
         location = uiState.locationName,
+        locationSelected = uiState.locationLat != null && uiState.locationLng != null,
+        locationSuggestions = predictions,
+        isLocationSuggestionsLoading = isPredictionsLoading,
+        placesErrorMessage = placesError,
         tags = uiState.tagsInput,
         previewImageUri = uiState.coverImageUri,
         validationError = uiState.validationError,
@@ -114,20 +143,30 @@ fun TripFormRoute(
         onTripTitleChanged = viewModel::onTitleChanged,
         onOpenFromDatePicker = { showFromDatePicker = true },
         onOpenToDatePicker = { showToDatePicker = true },
-        onOpenLocationAutocomplete = {
-            if (!Places.isInitialized()) {
-                val key = context.getString(R.string.google_maps_api_key)
-                if (key.isNotBlank() && !key.contains("REPLACE", ignoreCase = true)) {
-                    Places.initialize(context, key)
-                }
-            }
-            if (Places.isInitialized()) {
-                val fields = listOf(Place.Field.NAME, Place.Field.LAT_LNG)
-                val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields).build(context)
-                placesLauncher.launch(intent)
+        onLocationChanged = {
+            viewModel.onLocationTextChanged(it)
+            predictions = emptyList()
+            placesError = null
+        },
+        onLocationSuggestionClick = { suggestion ->
+            val client = placesClient ?: return@TripFormContent
+            coroutineScope.launch {
+                val selected = try {
+                    client.fetchSelectedPlace(suggestion.placeId)
+                } catch (_: Exception) {
+                    placesError = context.getString(R.string.places_fetch_failed)
+                    null
+                } ?: return@launch
+
+                predictions = emptyList()
+                placesError = null
+                viewModel.onPlaceSelected(
+                    name = selected.name,
+                    lat = selected.latLng.latitude,
+                    lng = selected.latLng.longitude
+                )
             }
         },
-        onLocationChanged = { viewModel.onLocationChanged(it) },
         onTagsChanged = viewModel::onTagsInputChanged,
         onRemovePreviewImage = { viewModel.onCoverImageChanged(null) },
         onSave = viewModel::saveTrip,
@@ -164,6 +203,10 @@ fun TripFormContent(
     toDate: String,
     dateRangeLabel: String,
     location: String,
+    locationSelected: Boolean,
+    locationSuggestions: List<PlaceSuggestion>,
+    isLocationSuggestionsLoading: Boolean,
+    placesErrorMessage: String?,
     tags: String,
     previewImageUri: String?,
     validationError: String?,
@@ -171,13 +214,16 @@ fun TripFormContent(
     onTripTitleChanged: (String) -> Unit,
     onOpenFromDatePicker: () -> Unit,
     onOpenToDatePicker: () -> Unit,
-    onOpenLocationAutocomplete: () -> Unit,
     onLocationChanged: (String) -> Unit,
+    onLocationSuggestionClick: (PlaceSuggestion) -> Unit,
     onTagsChanged: (String) -> Unit,
     onRemovePreviewImage: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var hasAttemptedSave by remember { mutableStateOf(false) }
+    var locationDropdownExpanded by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -189,7 +235,10 @@ fun TripFormContent(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onSave) {
+                    IconButton(onClick = {
+                        hasAttemptedSave = true
+                        onSave()
+                    }) {
                         Icon(Icons.Outlined.Save, contentDescription = "Save")
                     }
                 }
@@ -230,21 +279,56 @@ fun TripFormContent(
                 singleLine = true
             )
 
-            OutlinedTextField(
-                value = location,
-                onValueChange = onLocationChanged,
-                label = { Text(stringResource(R.string.location_label)) },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
-                trailingIcon = {
-                    Icon(
-                        Icons.Outlined.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.clickable(onClick = onOpenLocationAutocomplete)
-                    )
-                },
-                singleLine = true
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = location,
+                    onValueChange = {
+                        onLocationChanged(it)
+                        locationDropdownExpanded = true
+                    },
+                    label = { Text(stringResource(R.string.location_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
+                    trailingIcon = {
+                        if (isLocationSuggestionsLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        }
+                    },
+                    supportingText = {
+                        placesErrorMessage?.let {
+                            Text(text = it)
+                        }
+                        if (hasAttemptedSave && !locationSelected) {
+                            Text(stringResource(R.string.location_select_from_places_hint))
+                        }
+                    },
+                    isError = hasAttemptedSave && !locationSelected,
+                    singleLine = true
+                )
+
+                DropdownMenu(
+                    expanded = locationDropdownExpanded && locationSuggestions.isNotEmpty(),
+                    onDismissRequest = { locationDropdownExpanded = false },
+                    modifier = Modifier.fillMaxWidth(0.93f)
+                ) {
+                    locationSuggestions.forEach { suggestion ->
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(text = suggestion.primaryText)
+                                    suggestion.secondaryText?.let {
+                                        Text(text = it, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                            },
+                            onClick = {
+                                locationDropdownExpanded = false
+                                onLocationSuggestionClick(suggestion)
+                            }
+                        )
+                    }
+                }
+            }
             OutlinedTextField(
                 value = tags,
                 onValueChange = onTagsChanged,
@@ -283,8 +367,10 @@ fun TripFormContent(
                 }
             }
 
-            validationError?.let {
+            if (hasAttemptedSave) {
+                validationError?.let {
                 Text(text = it, color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }

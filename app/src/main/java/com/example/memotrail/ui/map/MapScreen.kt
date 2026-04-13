@@ -2,6 +2,7 @@ package com.example.memotrail.ui.map
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,10 +17,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,13 +38,29 @@ import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
 fun MapScreen(
-    selectedPin: MapPinUi,
+    pins: List<MapPinUi>,
+    selectedTripId: Long?,
+    onPinSelected: (Long) -> Unit,
     onViewTripClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var activePin by remember { mutableStateOf(selectedPin) }
+    if (pins.isEmpty()) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(text = stringResource(R.string.no_trips_found))
+        }
+        return
+    }
+
+    val activePin = remember(pins, selectedTripId) {
+        pins.firstOrNull { it.tripId == selectedTripId } ?: pins.first()
+    }
+
     val cameraPositionState: CameraPositionState = rememberCameraPositionState {
         position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(activePin.latLng, 4.8f)
+    }
+
+    LaunchedEffect(activePin.tripId) {
+        cameraPositionState.move(CameraUpdateFactory.newLatLng(activePin.latLng))
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -56,14 +71,13 @@ fun MapScreen(
             cameraPositionState = cameraPositionState,
             properties = MapProperties(isMyLocationEnabled = false)
         ) {
-            sampleMapPins.forEach { pin ->
+            pins.forEach { pin ->
                 Marker(
                     state = MarkerState(position = pin.latLng),
                     title = pin.location,
                     snippet = pin.date,
                     onClick = {
-                        activePin = pin
-                        cameraPositionState.move(CameraUpdateFactory.newLatLng(pin.latLng))
+                        onPinSelected(pin.tripId)
                         true
                     }
                 )
@@ -114,8 +128,3 @@ data class MapPinUi(
     val latLng: LatLng
 )
 
-val sampleMapPins = listOf(
-    MapPinUi(1, "Swiss Alps", "12 Jul 2025", null, LatLng(46.8182, 8.2275)),
-    MapPinUi(2, "Paris", "18 Jul 2025", null, LatLng(48.8566, 2.3522)),
-    MapPinUi(3, "Lisbon", "02 Aug 2025", null, LatLng(38.7223, -9.1393))
-)

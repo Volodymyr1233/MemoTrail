@@ -17,9 +17,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -30,14 +33,18 @@ import androidx.navigation.navArgument
 import com.example.memotrail.data.local.entity.MediaEntryEntity
 import com.example.memotrail.data.local.entity.TripDayEntity
 import com.example.memotrail.data.model.MediaType
+import com.example.memotrail.R
 import com.example.memotrail.di.AppContainer
+import com.example.memotrail.ui.common.PlaceSuggestion
+import com.example.memotrail.ui.common.fetchPredictions
+import com.example.memotrail.ui.common.fetchSelectedPlace
 import com.example.memotrail.ui.common.formatEpochDayIso
 import com.example.memotrail.ui.common.parseIsoDateToEpochDay
 import com.example.memotrail.ui.dashboard.DashboardViewModel
 import com.example.memotrail.ui.dashboard.MainScreen
 import com.example.memotrail.ui.dayform.DayFormContent
 import com.example.memotrail.ui.map.MapScreen
-import com.example.memotrail.ui.map.sampleMapPins
+import com.example.memotrail.ui.map.MapViewModel
 import com.example.memotrail.ui.media.AudioNotesAddScreen
 import com.example.memotrail.ui.media.AudioNotesScreen
 import com.example.memotrail.ui.media.PhotoViewerScreen
@@ -49,6 +56,9 @@ import com.example.memotrail.ui.tripdetails.TripDetailScreen
 import com.example.memotrail.ui.tripdetails.TripDetailsViewModel
 import com.example.memotrail.ui.tripform.TripFormRoute
 import com.example.memotrail.ui.tripform.TripFormViewModel
+import com.google.android.libraries.places.api.Places
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 
@@ -96,8 +106,15 @@ fun MemoTrailNavHost(
         }
 
         composable(MemoTrailDestination.Map.route) {
+            val mapViewModel: MapViewModel = viewModel(
+                factory = MapViewModel.Factory(appContainer.tripRepository)
+            )
+            val mapState by mapViewModel.uiState.collectAsStateWithLifecycle()
+
             MapScreen(
-                selectedPin = sampleMapPins.first(),
+                pins = mapState.pins,
+                selectedTripId = mapState.selectedTripId,
+                onPinSelected = mapViewModel::onPinSelected,
                 onViewTripClick = { tripId ->
                     navController.navigate(MemoTrailDestination.TripDetail.routeFor(tripId))
                 }
@@ -368,6 +385,11 @@ private fun DayFormRoute(
     onBack: () -> Unit,
     onOpenAudioManage: (Long) -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val placesClient = remember(context) {
+        if (Places.isInitialized()) Places.createClient(context) else null
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentDay = remember(uiState.days, dayId) { uiState.days.firstOrNull { it.id == dayId } }
     val selectedMedia = uiState.selectedDayWithMedia?.media.orEmpty()
@@ -376,6 +398,12 @@ private fun DayFormRoute(
         mutableStateOf(currentDay?.let { formatEpochDayIso(it.dayDateEpochDay) } ?: initialDate)
     }
     var locationInput by rememberSaveable(dayId) { mutableStateOf(currentDay?.locationName ?: "") }
+    var locationLat by rememberSaveable(dayId) { mutableStateOf(currentDay?.locationLat) }
+    var locationLng by rememberSaveable(dayId) { mutableStateOf(currentDay?.locationLng) }
+    var locationSuggestions by remember { mutableStateOf<List<PlaceSuggestion>>(emptyList()) }
+    var isLocationSuggestionsLoading by remember { mutableStateOf(false) }
+    var placesErrorMessage by remember { mutableStateOf<String?>(null) }
+    var hasAttemptedSave by rememberSaveable(dayId) { mutableStateOf(false) }
     var notesInput by rememberSaveable(dayId) { mutableStateOf(currentDay?.notes ?: "") }
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -386,12 +414,43 @@ private fun DayFormRoute(
         if (dayId != null) {
             dateInput = currentDay?.let { formatEpochDayIso(it.dayDateEpochDay) } ?: dateInput
             locationInput = currentDay?.locationName.orEmpty()
+            locationLat = currentDay?.locationLat
+            locationLng = currentDay?.locationLng
             notesInput = currentDay?.notes.orEmpty()
         }
+        hasAttemptedSave = false
         imageUris.clear()
         imageUris.addAll(selectedMedia.filter { it.type == MediaType.IMAGE }.map { it.uri })
         videoUris.clear()
         videoUris.addAll(selectedMedia.filter { it.type == MediaType.VIDEO }.map { it.uri })
+    }
+
+    LaunchedEffect(locationInput, placesClient) {
+        val client = placesClient ?: run {
+            locationSuggestions = emptyList()
+            isLocationSuggestionsLoading = false
+            placesErrorMessage = context.getString(R.string.places_unavailable)
+            return@LaunchedEffect
+        }
+
+        val query = locationInput.trim()
+        if (query.length < 2) {
+            locationSuggestions = emptyList()
+            isLocationSuggestionsLoading = false
+            placesErrorMessage = null
+            return@LaunchedEffect
+        }
+
+        delay(500)
+        isLocationSuggestionsLoading = true
+        placesErrorMessage = null
+        locationSuggestions = try {
+            client.fetchPredictions(query)
+        } catch (_: Exception) {
+            placesErrorMessage = context.getString(R.string.places_fetch_failed)
+            emptyList()
+        }
+        isLocationSuggestionsLoading = false
     }
 
     val mediaPickerLauncher = rememberLauncherForActivityResult(
@@ -420,11 +479,20 @@ private fun DayFormRoute(
         title = if (dayId == null) "Add Day" else "Edit Day",
         date = dateInput,
         location = locationInput,
+        isLocationSelected = locationLat != null && locationLng != null,
+        locationSuggestions = locationSuggestions,
+        isLocationSuggestionsLoading = isLocationSuggestionsLoading,
+        placesErrorMessage = placesErrorMessage,
+        showLocationValidation = hasAttemptedSave,
         notes = notesInput,
         imageUris = imageUris,
         videoUris = videoUris,
         onBack = onBack,
         onSave = {
+            hasAttemptedSave = true
+            if (locationInput.isBlank() || locationLat == null || locationLng == null) {
+                return@DayFormContent
+            }
             val dayEpoch = parseIsoDateToEpochDay(dateInput) ?: currentDay?.dayDateEpochDay ?: return@DayFormContent
             val now = System.currentTimeMillis()
             viewModel.addOrUpdateDay(
@@ -433,8 +501,8 @@ private fun DayFormRoute(
                     tripId = tripId,
                     dayDateEpochDay = dayEpoch,
                     locationName = locationInput,
-                    locationLat = currentDay?.locationLat,
-                    locationLng = currentDay?.locationLng,
+                    locationLat = locationLat,
+                    locationLng = locationLng,
                     notes = notesInput,
                     createdAtEpochMillis = currentDay?.createdAtEpochMillis ?: now,
                     updatedAtEpochMillis = now
@@ -466,7 +534,30 @@ private fun DayFormRoute(
             onBack()
         },
         onOpenDatePicker = { showDatePicker = true },
-        onLocationChanged = { locationInput = it },
+        onLocationChanged = {
+            locationInput = it
+            locationLat = null
+            locationLng = null
+            locationSuggestions = emptyList()
+            placesErrorMessage = null
+        },
+        onLocationSuggestionClick = { suggestion ->
+            val client = placesClient ?: return@DayFormContent
+            coroutineScope.launch {
+                val selected = try {
+                    client.fetchSelectedPlace(suggestion.placeId)
+                } catch (_: Exception) {
+                    placesErrorMessage = context.getString(R.string.places_fetch_failed)
+                    null
+                } ?: return@launch
+
+                locationInput = selected.name
+                locationLat = selected.latLng.latitude
+                locationLng = selected.latLng.longitude
+                locationSuggestions = emptyList()
+                placesErrorMessage = null
+            }
+        },
         onNotesChanged = { notesInput = it },
         onAddPhotosAndVideos = {
             val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -512,12 +603,12 @@ private fun DayFormRoute(
                         .toString()
                     showDatePicker = false
                 }) {
-                    Text("OK")
+                    Text(stringResource(R.string.confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         ) {

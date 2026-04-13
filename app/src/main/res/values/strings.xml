@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">MemoTrail</string>
-    <string name="google_maps_api_key">REPLACE_WITH_YOUR_GOOGLE_MAPS_KEY</string>
+    <string name="google_maps_api_key">REPLACE_WITH_GOOGLE_MAPS_API_KEY</string>
 
     <string name="add_trip_title">Create New Trip</string>
     <string name="edit_trip_title">Edit Trip</string>
@@ -10,6 +10,9 @@
     <string name="date_range_label">Date Range</string>
     <string name="location_label">Location</string>
     <string name="specific_location_label">Specific Location</string>
+    <string name="location_select_from_places_hint">Select a location from Google Places.</string>
+    <string name="places_unavailable">Google Places is unavailable. Please try again later.</string>
+    <string name="places_fetch_failed">Could not load place suggestions. Try again.</string>
     <string name="tags_label">Tags (comma separated)</string>
     <string name="preview_image_label">Preview Image</string>
     <string name="trip_preview_content_description">Trip preview image</string>
@@ -27,6 +30,7 @@
     <string name="licenses_label">Licenses</string>
 
     <string name="view_trip">View Trip</string>
+    <string name="no_trips_found">No trips with coordinates yet.</string>
     <string name="day_date_label">Day date</string>
     <string name="notes_label">Notes</string>
     <string name="add_photos_videos">Add Photos/Videos</string>

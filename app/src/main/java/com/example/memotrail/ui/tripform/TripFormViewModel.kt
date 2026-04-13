@@ -63,12 +63,28 @@ class TripFormViewModel(
         _uiState.update { it.copy(title = value, validationError = null) }
     }
 
-    fun onLocationChanged(value: String, lat: Double? = null, lng: Double? = null) {
+    fun onPlaceSelected(name: String, lat: Double, lng: Double) {
         _uiState.update {
             it.copy(
-                locationName = value,
+                locationName = name,
                 locationLat = lat,
                 locationLng = lng,
+                validationError = null
+            )
+        }
+    }
+
+    fun onLocationTextChanged(value: String) {
+        _uiState.update { state ->
+            val normalized = value.trim()
+            val selectedName = state.locationName.trim()
+            val keepCoordinates =
+                normalized.equals(selectedName, ignoreCase = true) && state.locationLat != null && state.locationLng != null
+
+            state.copy(
+                locationName = value,
+                locationLat = if (keepCoordinates) state.locationLat else null,
+                locationLng = if (keepCoordinates) state.locationLng else null,
                 validationError = null
             )
         }
@@ -108,8 +124,8 @@ class TripFormViewModel(
                 id = state.tripId ?: 0,
                 title = state.title.trim(),
                 locationName = state.locationName.trim(),
-                locationLat = state.locationLat,
-                locationLng = state.locationLng,
+                locationLat = state.locationLat!!,
+                locationLng = state.locationLng!!,
                 startDateEpochDay = state.startDateEpochDay!!,
                 endDateEpochDay = state.endDateEpochDay!!,
                 coverImageUri = state.coverImageUri,
@@ -146,7 +162,9 @@ class TripFormViewModel(
 
     private fun validate(state: TripFormUiState): String? {
         if (state.title.isBlank()) return "Trip title is required"
-        if (state.locationName.isBlank()) return "Trip location is required"
+        if (state.locationName.isBlank() || state.locationLat == null || state.locationLng == null) {
+            return "Please select a valid location from Google Places"
+        }
 
         val start = state.startDateEpochDay
         val end = state.endDateEpochDay

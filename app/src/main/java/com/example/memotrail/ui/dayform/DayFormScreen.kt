@@ -20,6 +20,9 @@ import androidx.compose.material.icons.outlined.KeyboardVoice
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.memotrail.R
+import com.example.memotrail.ui.common.PlaceSuggestion
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +49,11 @@ fun DayFormContent(
     title: String,
     date: String,
     location: String,
+    isLocationSelected: Boolean,
+    locationSuggestions: List<PlaceSuggestion>,
+    isLocationSuggestionsLoading: Boolean,
+    placesErrorMessage: String?,
+    showLocationValidation: Boolean,
     notes: String,
     imageUris: List<String>,
     videoUris: List<String>,
@@ -52,6 +61,7 @@ fun DayFormContent(
     onSave: () -> Unit,
     onOpenDatePicker: () -> Unit,
     onLocationChanged: (String) -> Unit,
+    onLocationSuggestionClick: (PlaceSuggestion) -> Unit,
     onNotesChanged: (String) -> Unit,
     onAddPhotosAndVideos: () -> Unit,
     onAddAudioNotes: () -> Unit,
@@ -59,6 +69,8 @@ fun DayFormContent(
     onRemoveVideo: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locationDropdownExpanded = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -87,13 +99,56 @@ fun DayFormContent(
                 Icon(Icons.Outlined.EditCalendar, contentDescription = null)
                 Text(if (date.isBlank()) stringResource(R.string.day_date_label) else date)
             }
-            OutlinedTextField(
-                value = location,
-                onValueChange = onLocationChanged,
-                label = { Text(stringResource(R.string.specific_location_label)) },
-                leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = location,
+                    onValueChange = {
+                        onLocationChanged(it)
+                        locationDropdownExpanded.value = true
+                    },
+                    label = { Text(stringResource(R.string.specific_location_label)) },
+                    leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
+                    trailingIcon = {
+                        if (isLocationSuggestionsLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        }
+                    },
+                    supportingText = {
+                        placesErrorMessage?.let {
+                            Text(it)
+                        }
+                        if (showLocationValidation && !isLocationSelected) {
+                            Text(stringResource(R.string.location_select_from_places_hint))
+                        }
+                    },
+                    isError = showLocationValidation && !isLocationSelected,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                DropdownMenu(
+                    expanded = locationDropdownExpanded.value && locationSuggestions.isNotEmpty(),
+                    onDismissRequest = { locationDropdownExpanded.value = false },
+                    modifier = Modifier.fillMaxWidth(0.93f)
+                ) {
+                    locationSuggestions.forEach { suggestion ->
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(text = suggestion.primaryText)
+                                    suggestion.secondaryText?.let {
+                                        Text(text = it, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                            },
+                            onClick = {
+                                locationDropdownExpanded.value = false
+                                onLocationSuggestionClick(suggestion)
+                            }
+                        )
+                    }
+                }
+            }
             OutlinedTextField(
                 value = notes,
                 onValueChange = onNotesChanged,

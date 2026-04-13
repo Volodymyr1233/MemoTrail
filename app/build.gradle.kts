@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -20,6 +22,28 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Read Google Maps API key from local.properties
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(localPropertiesFile.inputStream())
+        }
+        // Priority for API key resolution:
+        // 1. Environment variable GOOGLE_MAPS_API_KEY
+        // 2. System property / Gradle project property -PgoogleMapsApiKey or property named "GOOGLE_MAPS_API_KEY"
+        // 3. local.properties entry GOOGLE_MAPS_API_KEY
+        val envApiKey = System.getenv("GOOGLE_MAPS_API_KEY")
+        val projectPropApiKey = (project.findProperty("googleMapsApiKey") ?: project.findProperty("GOOGLE_MAPS_API_KEY"))?.toString()
+        val localPropApiKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY")
+
+        val mapsApiKey = when {
+            !envApiKey.isNullOrBlank() -> envApiKey
+            !projectPropApiKey.isNullOrBlank() -> projectPropApiKey
+            !localPropApiKey.isNullOrBlank() -> localPropApiKey
+            else -> "REPLACE_WITH_YOUR_GOOGLE_MAPS_KEY"
+        }
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
