@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.outlined.KeyboardVoice
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.PlayCircleOutline
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.memotrail.R
+import com.example.memotrail.ui.common.imageModelFromStoredUri
 import com.example.memotrail.ui.common.PlaceSuggestion
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +59,7 @@ fun DayFormContent(
     notes: String,
     imageUris: List<String>,
     videoUris: List<String>,
+    videoThumbnailUris: Map<String, String?>,
     onBack: () -> Unit,
     onSave: () -> Unit,
     onOpenDatePicker: () -> Unit,
@@ -169,10 +172,20 @@ fun DayFormContent(
             }
 
             Text(stringResource(R.string.images_label), style = MaterialTheme.typography.titleSmall)
-            MediaThumbRow(items = imageUris, onRemove = onRemoveImage)
+            MediaThumbRow(
+                items = imageUris,
+                onRemove = onRemoveImage,
+                displayAsVideo = false,
+                thumbnailUriProvider = { null }
+            )
 
             Text(stringResource(R.string.videos_label), style = MaterialTheme.typography.titleSmall)
-            MediaThumbRow(items = videoUris, onRemove = onRemoveVideo)
+            MediaThumbRow(
+                items = videoUris,
+                onRemove = onRemoveVideo,
+                displayAsVideo = true,
+                thumbnailUriProvider = { videoThumbnailUris[it] }
+            )
         }
     }
 }
@@ -180,7 +193,9 @@ fun DayFormContent(
 @Composable
 private fun MediaThumbRow(
     items: List<String>,
-    onRemove: (Int) -> Unit
+    onRemove: (Int) -> Unit,
+    displayAsVideo: Boolean,
+    thumbnailUriProvider: (String) -> String?
 ) {
     Row(
         modifier = Modifier
@@ -195,12 +210,32 @@ private fun MediaThumbRow(
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                AsyncImage(
-                    model = item,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                if (displayAsVideo) {
+                    val thumbnailModel = imageModelFromStoredUri(thumbnailUriProvider(item))
+                    if (thumbnailModel != null) {
+                        AsyncImage(
+                            model = thumbnailModel,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Outlined.PlayCircleOutline,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(36.dp)
+                        )
+                    }
+                } else {
+                    AsyncImage(
+                        model = imageModelFromStoredUri(item),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
                 IconButton(
                     onClick = { onRemove(index) },
                     modifier = Modifier.align(Alignment.TopEnd)

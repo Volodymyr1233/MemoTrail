@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.memotrail.data.local.entity.TripEntity
 import com.example.memotrail.ui.common.formatEpochDay
+import com.example.memotrail.ui.common.imageModelFromStoredUri
 import com.example.memotrail.ui.dashboard.TripSortOption
 
 @Composable
@@ -150,7 +151,7 @@ fun TripCard(
     ) {
         Box(Modifier.fillMaxSize()) {
             AsyncImage(
-                model = trip.coverImageUri,
+                model = imageModelFromStoredUri(trip.coverImageUri),
                 contentDescription = trip.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop

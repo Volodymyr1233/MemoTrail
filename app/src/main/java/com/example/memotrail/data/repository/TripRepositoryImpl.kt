@@ -19,6 +19,10 @@ class TripRepositoryImpl(
     private val tripTagDao: TripTagDao
 ) : TripRepository {
 
+    private fun resolveUpsertId(entityId: Long, upsertResultId: Long): Long {
+        return if (entityId > 0L) entityId else upsertResultId
+    }
+
     override fun observeTrips(): Flow<List<TripEntity>> =
         tripDao.observeTripsByNewestStartDate()
 
@@ -46,11 +50,14 @@ class TripRepositoryImpl(
     override fun observeMediaForDayByType(dayId: Long, type: MediaType): Flow<List<MediaEntryEntity>> =
         mediaEntryDao.observeMediaForDayByType(dayId, type)
 
-    override suspend fun upsertTrip(trip: TripEntity): Long =
-        tripDao.upsertTrip(trip)
+    override suspend fun upsertTrip(trip: TripEntity): Long {
+        val upsertResultId = tripDao.upsertTrip(trip)
+        return resolveUpsertId(trip.id, upsertResultId)
+    }
 
     override suspend fun upsertTripWithTags(trip: TripEntity, tagNames: List<String>): Long {
-        val tripId = tripDao.upsertTrip(trip)
+        val upsertResultId = tripDao.upsertTrip(trip)
+        val tripId = resolveUpsertId(trip.id, upsertResultId)
         tripTagDao.replaceTripTags(tripId = tripId, tagNames = tagNames)
         return tripId
     }
@@ -63,15 +70,19 @@ class TripRepositoryImpl(
         tripDao.deleteTrip(trip)
     }
 
-    override suspend fun upsertDay(day: TripDayEntity): Long =
-        tripDayDao.upsertDay(day)
+    override suspend fun upsertDay(day: TripDayEntity): Long {
+        val upsertResultId = tripDayDao.upsertDay(day)
+        return resolveUpsertId(day.id, upsertResultId)
+    }
 
     override suspend fun deleteDay(day: TripDayEntity) {
         tripDayDao.deleteDay(day)
     }
 
-    override suspend fun upsertMedia(media: MediaEntryEntity): Long =
-        mediaEntryDao.upsertMedia(media)
+    override suspend fun upsertMedia(media: MediaEntryEntity): Long {
+        val upsertResultId = mediaEntryDao.upsertMedia(media)
+        return resolveUpsertId(media.id, upsertResultId)
+    }
 
     override suspend fun deleteMedia(media: MediaEntryEntity) {
         mediaEntryDao.deleteMedia(media)

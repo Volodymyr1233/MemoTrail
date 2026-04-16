@@ -9,6 +9,7 @@ import com.example.memotrail.data.local.entity.TripEntity
 import com.example.memotrail.data.model.MediaType
 import com.example.memotrail.data.repository.TripRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,12 +25,20 @@ class TripDetailsViewModel(
     private val tripRepository: TripRepository
 ) : ViewModel() {
 
+    private var activeTripId: Long? = null
+    private var tripCoreJob: Job? = null
+    private var selectedDayMediaJob: Job? = null
     private val selectedDayId = MutableStateFlow<Long?>(null)
 
     private val _uiState = MutableStateFlow(TripDetailsUiState())
     val uiState: StateFlow<TripDetailsUiState> = _uiState.asStateFlow()
 
     fun loadTrip(tripId: Long) {
+        activeTripId = tripId
+        selectedDayId.value = null
+        _uiState.update { it.copy(selectedDayId = null, selectedDayWithMedia = null) }
+        tripCoreJob?.cancel()
+        selectedDayMediaJob?.cancel()
         observeTripCore(tripId)
         observeSelectedDayMedia()
     }
@@ -81,7 +90,7 @@ class TripDetailsViewModel(
     }
 
     private fun observeTripCore(tripId: Long) {
-        viewModelScope.launch {
+        tripCoreJob = viewModelScope.launch {
             combine(
                 tripRepository.observeTrip(tripId),
                 tripRepository.observeTripTagNames(tripId),
@@ -98,7 +107,9 @@ class TripDetailsViewModel(
                     }
                 }
                 .collect { (trip, tags, days) ->
-                    val preferredDay = _uiState.value.selectedDayId ?: days.firstOrNull()?.id
+                    val preferredDay = _uiState.value.selectedDayId?.takeIf { selectedId ->
+                        days.any { it.id == selectedId }
+                    } ?: days.firstOrNull()?.id
                     if (preferredDay != _uiState.value.selectedDayId) {
                         selectedDayId.value = preferredDay
                     }
@@ -117,10 +128,10 @@ class TripDetailsViewModel(
     }
 
     private fun observeSelectedDayMedia() {
-        viewModelScope.launch {
+        selectedDayMediaJob = viewModelScope.launch {
             selectedDayId
                 .flatMapLatest { dayId ->
-                    if (dayId == null) flowOf(null)
+                    if (dayId == null || activeTripId == null) flowOf(null)
                     else tripRepository.observeDayWithMedia(dayId)
                 }
                 .catch { throwable ->

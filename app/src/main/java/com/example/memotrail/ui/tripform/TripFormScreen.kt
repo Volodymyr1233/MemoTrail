@@ -1,5 +1,9 @@
 package com.example.memotrail.ui.tripform
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.LocationOn
@@ -51,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.memotrail.R
+import com.example.memotrail.data.media.InternalMediaStorage
+import com.example.memotrail.ui.common.imageModelFromStoredUri
 import com.example.memotrail.ui.common.PlaceSuggestion
 import com.example.memotrail.ui.common.fetchPredictions
 import com.example.memotrail.ui.common.fetchSelectedPlace
@@ -79,9 +86,29 @@ fun TripFormRoute(
     var predictions by remember { mutableStateOf<List<PlaceSuggestion>>(emptyList()) }
     var isPredictionsLoading by remember { mutableStateOf(false) }
     var placesError by remember { mutableStateOf<String?>(null) }
+    var imageUploadError by remember { mutableStateOf<String?>(null) }
 
     var showFromDatePicker by remember { mutableStateOf(false) }
     var showToDatePicker by remember { mutableStateOf(false) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { selectedUri ->
+        if (selectedUri == null) return@rememberLauncherForActivityResult
+
+        coroutineScope.launch {
+            val internalUri = InternalMediaStorage.copyImageToInternalStorage(
+                context = context,
+                sourceUri = selectedUri
+            )
+            if (internalUri == null) {
+                imageUploadError = context.getString(R.string.image_import_failed)
+            } else {
+                imageUploadError = null
+                viewModel.onCoverImageChanged(internalUri)
+            }
+        }
+    }
 
     LaunchedEffect(uiState.locationName, placesClient) {
         val client = placesClient ?: run {
@@ -116,7 +143,10 @@ fun TripFormRoute(
     }
 
     LaunchedEffect(uiState.savedTripId) {
-        uiState.savedTripId?.let(onSaved)
+        uiState.savedTripId?.let { tripId ->
+            onSaved(tripId)
+            viewModel.onSavedNavigationConsumed()
+        }
     }
 
     val dateRangeLabel = if (uiState.startDateEpochDay != null && uiState.endDateEpochDay != null) {
@@ -139,6 +169,7 @@ fun TripFormRoute(
         tags = uiState.tagsInput,
         previewImageUri = uiState.coverImageUri,
         validationError = uiState.validationError,
+        imageUploadError = imageUploadError,
         onBack = onBack,
         onTripTitleChanged = viewModel::onTitleChanged,
         onOpenFromDatePicker = { showFromDatePicker = true },
@@ -168,7 +199,15 @@ fun TripFormRoute(
             }
         },
         onTagsChanged = viewModel::onTagsInputChanged,
-        onRemovePreviewImage = { viewModel.onCoverImageChanged(null) },
+        onPickPreviewImage = {
+            imagePickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        },
+        onRemovePreviewImage = {
+            imageUploadError = null
+            viewModel.onCoverImageChanged(null)
+        },
         onSave = viewModel::saveTrip,
         modifier = modifier
     )
@@ -210,6 +249,7 @@ fun TripFormContent(
     tags: String,
     previewImageUri: String?,
     validationError: String?,
+    imageUploadError: String?,
     onBack: () -> Unit,
     onTripTitleChanged: (String) -> Unit,
     onOpenFromDatePicker: () -> Unit,
@@ -217,6 +257,7 @@ fun TripFormContent(
     onLocationChanged: (String) -> Unit,
     onLocationSuggestionClick: (PlaceSuggestion) -> Unit,
     onTagsChanged: (String) -> Unit,
+    onPickPreviewImage: () -> Unit,
     onRemovePreviewImage: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier
@@ -345,13 +386,34 @@ fun TripFormContent(
                     .height(190.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable(onClick = onPickPreviewImage)
             ) {
                 AsyncImage(
-                    model = previewImageUri,
+                    model = imageModelFromStoredUri(previewImageUri),
                     contentDescription = stringResource(R.string.trip_preview_content_description),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
+                if (previewImageUri.isNullOrBlank()) {
+                    Text(
+                        text = stringResource(R.string.upload_image),
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                IconButton(
+                    onClick = onPickPreviewImage,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp)
+                        .size(30.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(50)
+                        )
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.upload_image))
+                }
                 IconButton(
                     onClick = onRemovePreviewImage,
                     modifier = Modifier
@@ -365,6 +427,10 @@ fun TripFormContent(
                 ) {
                     Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.remove_image))
                 }
+            }
+
+            imageUploadError?.let {
+                Text(text = it, color = MaterialTheme.colorScheme.error)
             }
 
             if (hasAttemptedSave) {

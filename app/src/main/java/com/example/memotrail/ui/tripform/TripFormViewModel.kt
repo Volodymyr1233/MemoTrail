@@ -148,6 +148,10 @@ class TripFormViewModel(
         }
     }
 
+    fun onSavedNavigationConsumed() {
+        _uiState.update { it.copy(savedTripId = null) }
+    }
+
     fun deleteTrip() {
         val state = _uiState.value
         val tripId = state.tripId ?: return

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.KeyboardVoice
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -45,6 +46,7 @@ import com.example.memotrail.data.local.entity.MediaEntryEntity
 import com.example.memotrail.data.local.entity.TripDayEntity
 import com.example.memotrail.data.model.MediaType
 import com.example.memotrail.ui.common.formatEpochDay
+import com.example.memotrail.ui.common.imageModelFromStoredUri
 
 @Composable
 fun TripDetailScreen(
@@ -67,7 +69,7 @@ fun TripDetailScreen(
                 .height(250.dp)
         ) {
             AsyncImage(
-                model = state.trip?.coverImageUri,
+                model = imageModelFromStoredUri(state.trip?.coverImageUri),
                 contentDescription = state.trip?.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -259,12 +261,24 @@ private fun MediaStrip(
                     .clickable { onMediaClick(index, item) }
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                AsyncImage(
-                    model = item.thumbnailUri ?: item.uri,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                val imageModel = imageModelFromStoredUri(item.thumbnailUri)
+                if (showPlayIcon && imageModel == null) {
+                    Icon(
+                        imageVector = Icons.Outlined.Videocam,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(28.dp)
+                    )
+                } else {
+                    AsyncImage(
+                        model = imageModel ?: imageModelFromStoredUri(item.uri),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
                 if (showPlayIcon) {
                     Icon(
                         imageVector = Icons.Outlined.PlayArrow,

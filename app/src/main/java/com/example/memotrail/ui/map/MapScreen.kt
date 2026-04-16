@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.memotrail.R
+import com.example.memotrail.ui.common.imageModelFromStoredUri
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraPositionState
@@ -99,7 +100,7 @@ fun MapScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
-                    model = activePin.thumbnail,
+                    model = imageModelFromStoredUri(activePin.thumbnail),
                     contentDescription = activePin.location,
                     modifier = Modifier
                         .size(72.dp)

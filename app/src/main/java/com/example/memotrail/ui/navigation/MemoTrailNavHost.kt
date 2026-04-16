@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -32,6 +33,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.memotrail.data.local.entity.MediaEntryEntity
 import com.example.memotrail.data.local.entity.TripDayEntity
+import com.example.memotrail.data.media.InternalMediaStorage
 import com.example.memotrail.data.model.MediaType
 import com.example.memotrail.R
 import com.example.memotrail.di.AppContainer
@@ -130,7 +132,10 @@ fun MemoTrailNavHost(
                 tripIdForEdit = null,
                 onBack = { navController.popBackStack() },
                 onSaved = { tripId ->
-                    navController.navigate(MemoTrailDestination.TripDetail.routeFor(tripId))
+                    navController.navigate(MemoTrailDestination.TripDetail.routeFor(tripId)) {
+                        popUpTo(MemoTrailDestination.AddTrip.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -368,7 +373,7 @@ fun MemoTrailNavHost(
             val media = uiState.selectedDayWithMedia?.media?.firstOrNull { it.id == mediaId }
             VideoPlayScreen(
                 tripTitle = uiState.trip?.title ?: "Video",
-                thumbnailUri = media?.thumbnailUri ?: media?.uri,
+                videoUri = media?.uri,
                 onClose = { navController.popBackStack() }
             )
         }
@@ -392,7 +397,13 @@ private fun DayFormRoute(
     }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentDay = remember(uiState.days, dayId) { uiState.days.firstOrNull { it.id == dayId } }
-    val selectedMedia = uiState.selectedDayWithMedia?.media.orEmpty()
+    val currentDayMedia = remember(dayId, uiState.selectedDayWithMedia?.day?.id, uiState.selectedDayWithMedia?.media) {
+        if (dayId != null && uiState.selectedDayWithMedia?.day?.id == dayId) {
+            uiState.selectedDayWithMedia?.media.orEmpty()
+        } else {
+            emptyList()
+        }
+    }
 
     var dateInput by rememberSaveable(dayId, initialDate) {
         mutableStateOf(currentDay?.let { formatEpochDayIso(it.dayDateEpochDay) } ?: initialDate)
@@ -407,10 +418,11 @@ private fun DayFormRoute(
     var notesInput by rememberSaveable(dayId) { mutableStateOf(currentDay?.notes ?: "") }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    val imageUris = remember { mutableStateListOf<String>() }
-    val videoUris = remember { mutableStateListOf<String>() }
+    val imageUris = remember(dayId) { mutableStateListOf<String>() }
+    val videoUris = remember(dayId) { mutableStateListOf<String>() }
+    val videoThumbnailUris = remember(dayId) { mutableStateMapOf<String, String?>() }
 
-    LaunchedEffect(currentDay?.id, selectedMedia.size) {
+    LaunchedEffect(dayId, currentDay?.id, currentDayMedia.size) {
         if (dayId != null) {
             dateInput = currentDay?.let { formatEpochDayIso(it.dayDateEpochDay) } ?: dateInput
             locationInput = currentDay?.locationName.orEmpty()
@@ -420,9 +432,13 @@ private fun DayFormRoute(
         }
         hasAttemptedSave = false
         imageUris.clear()
-        imageUris.addAll(selectedMedia.filter { it.type == MediaType.IMAGE }.map { it.uri })
+        imageUris.addAll(currentDayMedia.filter { it.type == MediaType.IMAGE }.map { it.uri })
         videoUris.clear()
-        videoUris.addAll(selectedMedia.filter { it.type == MediaType.VIDEO }.map { it.uri })
+        videoUris.addAll(currentDayMedia.filter { it.type == MediaType.VIDEO }.map { it.uri })
+        videoThumbnailUris.clear()
+        currentDayMedia.filter { it.type == MediaType.VIDEO }.forEach { media ->
+            videoThumbnailUris[media.uri] = media.thumbnailUri
+        }
     }
 
     LaunchedEffect(locationInput, placesClient) {
@@ -456,12 +472,21 @@ private fun DayFormRoute(
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)
     ) { uris: List<Uri> ->
-        uris.forEach { uri ->
-            val text = uri.toString()
-            if (text.endsWith(".mp4", ignoreCase = true) || text.contains("video", ignoreCase = true)) {
-                if (!videoUris.contains(text)) videoUris.add(text)
-            } else {
-                if (!imageUris.contains(text)) imageUris.add(text)
+        coroutineScope.launch {
+            uris.forEach { uri ->
+                val storedMedia = InternalMediaStorage.copyMediaToInternalStorage(
+                    context = context,
+                    sourceUri = uri
+                ) ?: return@forEach
+
+                when (storedMedia.mediaType) {
+                    MediaType.IMAGE -> if (!imageUris.contains(storedMedia.storedUri)) imageUris.add(storedMedia.storedUri)
+                    MediaType.VIDEO -> {
+                        if (!videoUris.contains(storedMedia.storedUri)) videoUris.add(storedMedia.storedUri)
+                        videoThumbnailUris[storedMedia.storedUri] = storedMedia.thumbnailUri
+                    }
+                    MediaType.AUDIO -> Unit
+                }
             }
         }
     }
@@ -487,6 +512,7 @@ private fun DayFormRoute(
         notes = notesInput,
         imageUris = imageUris,
         videoUris = videoUris,
+        videoThumbnailUris = videoThumbnailUris,
         onBack = onBack,
         onSave = {
             hasAttemptedSave = true
@@ -508,25 +534,57 @@ private fun DayFormRoute(
                     updatedAtEpochMillis = now
                 )
             ) { savedDayId ->
-                imageUris.forEach { uri ->
+                val effectiveDayId = if (dayId != null && dayId > 0L) dayId else savedDayId
+                if (effectiveDayId <= 0L) {
+                    return@addOrUpdateDay
+                }
+
+                val existingImages = currentDayMedia.filter { it.type == MediaType.IMAGE }
+                val existingVideos = currentDayMedia.filter { it.type == MediaType.VIDEO }
+                val targetImageUris = imageUris.distinct()
+                val targetVideoUris = videoUris.distinct()
+
+                existingImages
+                    .filter { it.uri !in targetImageUris }
+                    .forEach(viewModel::deleteMedia)
+                existingVideos
+                    .filter { it.uri !in targetVideoUris }
+                    .forEach(viewModel::deleteMedia)
+
+                val existingImageByUri = existingImages.associateBy { it.uri }
+                val existingVideoByUri = existingVideos.associateBy { it.uri }
+
+                targetImageUris.forEach { uri ->
+                    val existing = existingImageByUri[uri]
                     viewModel.addOrUpdateMedia(
                         MediaEntryEntity(
-                            tripDayId = savedDayId,
+                            id = existing?.id ?: 0L,
+                            tripDayId = effectiveDayId,
                             type = MediaType.IMAGE,
                             uri = uri,
                             thumbnailUri = uri,
-                            createdAtEpochMillis = System.currentTimeMillis()
+                            durationMs = existing?.durationMs,
+                            caption = existing?.caption,
+                            pinLat = existing?.pinLat,
+                            pinLng = existing?.pinLng,
+                            createdAtEpochMillis = existing?.createdAtEpochMillis ?: System.currentTimeMillis()
                         )
                     )
                 }
-                videoUris.forEach { uri ->
+                targetVideoUris.forEach { uri ->
+                    val existing = existingVideoByUri[uri]
                     viewModel.addOrUpdateMedia(
                         MediaEntryEntity(
-                            tripDayId = savedDayId,
+                            id = existing?.id ?: 0L,
+                            tripDayId = effectiveDayId,
                             type = MediaType.VIDEO,
                             uri = uri,
-                            thumbnailUri = uri,
-                            createdAtEpochMillis = System.currentTimeMillis()
+                            thumbnailUri = videoThumbnailUris[uri] ?: existing?.thumbnailUri,
+                            durationMs = existing?.durationMs,
+                            caption = existing?.caption,
+                            pinLat = existing?.pinLat,
+                            pinLng = existing?.pinLng,
+                            createdAtEpochMillis = existing?.createdAtEpochMillis ?: System.currentTimeMillis()
                         )
                     )
                 }
@@ -575,8 +633,7 @@ private fun DayFormRoute(
             permissionLauncher.launch(permissions)
         },
         onAddAudioNotes = {
-            val targetDayId = dayId ?: uiState.selectedDayId
-            targetDayId?.let(onOpenAudioManage)
+            dayId?.let(onOpenAudioManage)
         },
         onRemoveImage = { index ->
             if (index in imageUris.indices) {
@@ -585,7 +642,8 @@ private fun DayFormRoute(
         },
         onRemoveVideo = { index ->
             if (index in videoUris.indices) {
-                videoUris.removeAt(index)
+                val removedUri = videoUris.removeAt(index)
+                videoThumbnailUris.remove(removedUri)
             }
         }
     )
