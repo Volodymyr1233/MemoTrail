@@ -94,13 +94,7 @@ fun MemoTrailNavHost(
             MainScreen(
                 query = uiState.query,
                 trips = uiState.trips,
-                selectedSort = uiState.sortOption,
-                selectedLocation = uiState.locationFilter,
                 onQueryChange = dashboardViewModel::onQueryChanged,
-                onSortByDate = dashboardViewModel::onSortByDate,
-                onSortByLocation = dashboardViewModel::onSortByLocation,
-                onFilterByLocation = dashboardViewModel::onLocationFilterChanged,
-                onOpenFilters = {},
                 onTripClick = { tripId -> navController.navigate(MemoTrailDestination.TripDetail.routeFor(tripId)) },
                 onEditTrip = { tripId -> navController.navigate(MemoTrailDestination.EditTrip.routeFor(tripId)) },
                 onDeleteTrip = dashboardViewModel::deleteTrip

@@ -298,6 +298,7 @@ fun TripFormContent(
                 onValueChange = onTripTitleChanged,
                 label = { Text(stringResource(R.string.trip_title_label)) },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
                 singleLine = true
             )
 
@@ -317,6 +318,7 @@ fun TripFormContent(
                 enabled = false,
                 label = { Text(stringResource(R.string.date_range_label)) },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
                 singleLine = true
             )
 
@@ -344,7 +346,9 @@ fun TripFormContent(
                         }
                     },
                     isError = hasAttemptedSave && !locationSelected,
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+
                 )
 
                 DropdownMenu(
@@ -376,6 +380,7 @@ fun TripFormContent(
                 label = { Text(stringResource(R.string.tags_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Outlined.Tag, contentDescription = null) },
+                shape = RoundedCornerShape(16.dp),
                 singleLine = true
             )
 

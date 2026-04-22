@@ -9,3 +9,5 @@ val Mist = Color(0xFFD8F2EA)
 val DeepForest = Color(0xFF0B3D32)
 val Moss = Color(0xFF2D5F52)
 val SoftMint = Color(0xFF9AD8C6)
+
+val SoftOrange = Color(0xFFF54900)

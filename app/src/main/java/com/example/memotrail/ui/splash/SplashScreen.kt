@@ -5,12 +5,14 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,8 +30,19 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.memotrail.R
+import com.example.memotrail.ui.theme.ForestGreen
+import com.example.memotrail.ui.theme.SoftMint
+import com.example.memotrail.ui.theme.SoftOrange
+import com.example.memotrail.ui.theme.TealAccent
+
 import kotlinx.coroutines.delay
 
 @Composable
@@ -38,7 +51,7 @@ fun SplashScreen(
     modifier: Modifier = Modifier
 ) {
     LaunchedEffect(Unit) {
-        delay(2_000)
+        delay(2000)
         onTimeout()
     }
 
@@ -69,36 +82,36 @@ fun SplashScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
+        Image(
+            painter = painterResource(id = R.drawable.loading_img), // Replace with your actual PNG name
+            contentDescription = "MemoTrail Logo",
             modifier = Modifier
-                .size(112.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(
-                    brush = Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.secondary
-                        )
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Place,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(56.dp)
-            )
-        }
+                .size(160.dp)
+                .clip(RoundedCornerShape(28.dp)),
+            contentScale = ContentScale.Crop 
+        )
 
         Text(
             text = "MemoTrail",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 34.sp
+            style = TextStyle(
+                fontWeight = FontWeight.W700,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        TealAccent, SoftOrange
+                    )
+                )),
+            fontSize = 36.sp
+            )
+
+        Text(
+            text = "Your Journey, Captured",
+            style = TextStyle(
+                fontWeight = FontWeight.W400,
+               ),
+            fontSize = 14.sp
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(modifier = Modifier.padding(top = 40.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AnimatedDot(alpha = dot1)
             AnimatedDot(alpha = dot2)
             AnimatedDot(alpha = dot3)
@@ -114,6 +127,14 @@ private fun AnimatedDot(alpha: Float) {
             .alpha(alpha)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.primary)
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SplashScreenPreview() {
+    SplashScreen(
+        onTimeout = {}
     )
 }
 

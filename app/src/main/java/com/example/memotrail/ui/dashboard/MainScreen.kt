@@ -24,20 +24,28 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.memotrail.data.local.entity.TripEntity
@@ -49,13 +57,7 @@ import com.example.memotrail.ui.dashboard.TripSortOption
 fun MainScreen(
     query: String,
     trips: List<TripEntity>,
-    selectedSort: TripSortOption,
-    selectedLocation: String?,
     onQueryChange: (String) -> Unit,
-    onSortByDate: () -> Unit,
-    onSortByLocation: () -> Unit,
-    onFilterByLocation: (String?) -> Unit,
-    onOpenFilters: () -> Unit,
     onTripClick: (Long) -> Unit,
     onEditTrip: (Long) -> Unit,
     onDeleteTrip: (TripEntity) -> Unit,
@@ -77,42 +79,9 @@ fun MainScreen(
             leadingIcon = {
                 Icon(Icons.Outlined.Search, contentDescription = null)
             },
+            shape = RoundedCornerShape(16.dp),
             singleLine = true
         )
-
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            AssistChip(
-                onClick = onSortByDate,
-                label = { Text("Sort: Date") },
-                leadingIcon = if (selectedSort == TripSortOption.DATE_DESC) {
-                    { Icon(Icons.Outlined.Search, contentDescription = null) }
-                } else null
-            )
-            AssistChip(
-                onClick = onSortByLocation,
-                label = { Text("Sort: Location") },
-                leadingIcon = if (selectedSort == TripSortOption.LOCATION_ASC) {
-                    { Icon(Icons.Outlined.Search, contentDescription = null) }
-                } else null
-            )
-            AssistChip(
-                onClick = { onFilterByLocation(null) },
-                label = { Text("All locations") }
-            )
-            trips.map { it.locationName }.distinct().take(4).forEach { location ->
-                AssistChip(
-                    onClick = { onFilterByLocation(location) },
-                    label = { Text(location) },
-                    leadingIcon = if (selectedLocation == location) {
-                        { Icon(Icons.Outlined.Place, contentDescription = null) }
-                    } else null
-                )
-            }
-            AssistChip(onClick = onOpenFilters, label = { Text("Filters") })
-        }
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -142,6 +111,8 @@ fun TripCard(
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var expanded by remember { mutableStateOf(false) }
+
     Card(
         modifier = modifier
             .height(250.dp)
@@ -217,21 +188,44 @@ fun TripCard(
                         color = Color.White,
                         style = MaterialTheme.typography.bodySmall
                     )
-                    Row {
-                        IconButton(onClick = onEditClick, modifier = Modifier.size(28.dp)) {
+                    Box {
+                        IconButton(onClick = { expanded = true }, modifier = Modifier.size(28.dp)) {
                             Icon(
-                                Icons.Outlined.Edit,
-                                contentDescription = "Edit trip",
+                                Icons.Outlined.MoreVert,
+                                contentDescription = "More options",
                                 tint = Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
-                        IconButton(onClick = onDeleteClick, modifier = Modifier.size(28.dp)) {
-                            Icon(
-                                Icons.Outlined.Delete,
-                                contentDescription = "Delete trip",
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Edit") },
+                                onClick = {
+                                    expanded = false
+                                    onEditClick()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Edit,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete") },
+                                onClick = {
+                                    expanded = false
+                                    onDeleteClick()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Delete,
+                                        contentDescription = null
+                                    )
+                                }
                             )
                         }
                     }
@@ -240,4 +234,3 @@ fun TripCard(
         }
     }
 }
-
