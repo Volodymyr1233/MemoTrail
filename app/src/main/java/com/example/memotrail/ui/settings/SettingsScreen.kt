@@ -25,7 +25,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.memotrail.R
 
 @Composable
 fun SettingsScreen(
@@ -43,17 +45,17 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(text = "Settings", style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
 
         ElevatedCard {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(text = "Appearance", style = MaterialTheme.typography.titleMedium)
+                Text(text = stringResource(R.string.appearance_title), style = MaterialTheme.typography.titleMedium)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "Dark mode")
+                    Text(text = stringResource(R.string.dark_mode_label))
                     Switch(checked = darkModeEnabled, onCheckedChange = onDarkModeToggle)
                 }
             }
@@ -61,14 +63,14 @@ fun SettingsScreen(
 
         ElevatedCard {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(text = "Language", style = MaterialTheme.typography.titleMedium)
+                Text(text = stringResource(R.string.language_title), style = MaterialTheme.typography.titleMedium)
                 LanguageRow(
-                    label = "English",
+                    label = stringResource(R.string.language_english),
                     selected = selectedLanguage == "en",
                     onClick = { onLanguageSelected("en") }
                 )
                 LanguageRow(
-                    label = "Polski",
+                    label = stringResource(R.string.language_polish),
                     selected = selectedLanguage == "pl",
                     onClick = { onLanguageSelected("pl") }
                 )
@@ -78,15 +80,15 @@ fun SettingsScreen(
         ElevatedCard {
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Text(
-                    text = "About",
+                    text = stringResource(R.string.about_title),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
-                AboutRow(label = "Version", value = "1.0.0") { onAboutClick("version") }
+                AboutRow(label = stringResource(R.string.version_label), value = stringResource(R.string.app_version_value)) { onAboutClick("version") }
                 HorizontalDivider()
-                AboutRow(label = "Privacy policy") { onAboutClick("privacy") }
+                AboutRow(label = stringResource(R.string.privacy_policy_label)) { onAboutClick("privacy") }
                 HorizontalDivider()
-                AboutRow(label = "Licenses") { onAboutClick("licenses") }
+                AboutRow(label = stringResource(R.string.licenses_label)) { onAboutClick("licenses") }
             }
         }
     }

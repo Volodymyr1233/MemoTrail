@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -80,15 +81,16 @@ fun MemoTrailBottomNav(
     NavigationBar {
         bottomNavDestinations.forEach { destination ->
             val isSelected = currentRoute == destination.route
+            val label = stringResource(destination.labelRes)
             NavigationBarItem(
                 selected = isSelected,
                 onClick = { onDestinationClick(destination) },
                 icon = {
                     destination.icon?.let { icon ->
-                        Icon(imageVector = icon, contentDescription = destination.label)
+                        Icon(imageVector = icon, contentDescription = label)
                     }
                 },
-                label = { Text(text = destination.label) }
+                label = { Text(text = label) }
             )
         }
     }

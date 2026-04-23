@@ -23,11 +23,18 @@
     <string name="cancel">Anuluj</string>
 
     <string name="settings_title">Ustawienia</string>
+    <string name="home_label">Start</string>
+    <string name="map_label">Mapa</string>
+    <string name="add_label">Dodaj</string>
+    <string name="settings_nav_label">Ustawienia</string>
     <string name="appearance_title">Wyglad</string>
     <string name="dark_mode_label">Tryb ciemny</string>
     <string name="language_title">Jezyk</string>
+    <string name="language_english">English</string>
+    <string name="language_polish">Polski</string>
     <string name="about_title">O aplikacji</string>
     <string name="version_label">Wersja</string>
+    <string name="app_version_value">1.0.0</string>
     <string name="privacy_policy_label">Polityka prywatnosci</string>
     <string name="licenses_label">Licencje</string>
 

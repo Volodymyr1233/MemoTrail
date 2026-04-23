@@ -23,11 +23,18 @@
     <string name="cancel">Cancel</string>
 
     <string name="settings_title">Settings</string>
+    <string name="home_label">Home</string>
+    <string name="map_label">Map</string>
+    <string name="add_label">Add</string>
+    <string name="settings_nav_label">Settings</string>
     <string name="appearance_title">Appearance</string>
     <string name="dark_mode_label">Dark mode</string>
     <string name="language_title">Language</string>
+    <string name="language_english">English</string>
+    <string name="language_polish">Polski</string>
     <string name="about_title">About</string>
     <string name="version_label">Version</string>
+    <string name="app_version_value">1.0.0</string>
     <string name="privacy_policy_label">Privacy policy</string>
     <string name="licenses_label">Licenses</string>
 

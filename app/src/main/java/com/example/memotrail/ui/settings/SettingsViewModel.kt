@@ -1,8 +1,10 @@
 package com.example.memotrail.ui.settings
 
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.core.os.LocaleListCompat
 import com.example.memotrail.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,7 +42,10 @@ class SettingsViewModel(
 
     fun onLanguageChanged(languageTag: String) {
         _uiState.update { it.copy(languageTag = languageTag) }
-        viewModelScope.launch { userPreferencesRepository.setLanguageTag(languageTag) }
+        viewModelScope.launch {
+            userPreferencesRepository.setLanguageTag(languageTag)
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageTag))
+        }
     }
 
     class Factory(
