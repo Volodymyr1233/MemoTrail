@@ -42,10 +42,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.memotrail.R
 import com.example.memotrail.data.local.entity.MediaEntryEntity
 import com.example.memotrail.data.local.entity.TripDayEntity
 import com.example.memotrail.data.model.MediaType
@@ -95,7 +97,11 @@ fun TripDetailScreen(
                     .padding(12.dp)
                     .background(Color.Black.copy(alpha = 0.25f), CircleShape)
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = Color.White)
+                Icon(
+                    Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
+                    tint = Color.White
+                )
             }
             Column(
                 modifier = Modifier
@@ -118,9 +124,9 @@ fun TripDetailScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Journey Timeline", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.journey_timeline_title), style = MaterialTheme.typography.titleLarge)
             IconButton(onClick = onAddDay) {
-                Icon(Icons.Outlined.Add, contentDescription = "Add day")
+                Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.add_day))
             }
         }
 
@@ -226,9 +232,9 @@ private fun TimelineItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Day ${day.id}", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.day_label_format, day.id), fontWeight = FontWeight.SemiBold)
                     Text(
-                        text = "Edit",
+                        text = stringResource(R.string.edit_action),
                         modifier = Modifier.clickable(onClick = onEdit),
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -240,7 +246,7 @@ private fun TimelineItem(
                 }
 
                 if (imageMedia.isNotEmpty()) {
-                    Text("Images", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.images_label), style = MaterialTheme.typography.titleSmall)
                     MediaStrip(
                         media = imageMedia,
                         onMediaClick = { index, _ -> onOpenPhoto(index) }
@@ -248,7 +254,7 @@ private fun TimelineItem(
                 }
 
                 if (videoMedia.isNotEmpty()) {
-                    Text("Videos", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.videos_label), style = MaterialTheme.typography.titleSmall)
                     MediaStrip(
                         media = videoMedia,
                         showPlayIcon = true,
@@ -259,7 +265,7 @@ private fun TimelineItem(
                 Button(onClick = onAudioClick) {
                     Icon(Icons.Outlined.KeyboardVoice, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Audio Notes")
+                    Text(stringResource(R.string.audio_notes))
                 }
             }
         }

@@ -168,7 +168,16 @@ fun TripFormRoute(
         placesErrorMessage = placesError,
         tags = uiState.tagsInput,
         previewImageUri = uiState.coverImageUri,
-        validationError = uiState.validationError,
+        validationError = uiState.validationError?.let { raw ->
+            when (raw) {
+                "Trip not found" -> context.getString(R.string.trip_not_found)
+                "Trip title is required" -> context.getString(R.string.trip_title_required)
+                "Please select a valid location from Google Places" -> context.getString(R.string.location_select_from_places_hint)
+                "Date range is required" -> context.getString(R.string.date_range_required)
+                "End date cannot be earlier than start date" -> context.getString(R.string.end_date_before_start)
+                else -> raw
+            }
+        },
         imageUploadError = imageUploadError,
         onBack = onBack,
         onTripTitleChanged = viewModel::onTitleChanged,
@@ -272,7 +281,7 @@ fun TripFormContent(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -280,7 +289,7 @@ fun TripFormContent(
                         hasAttemptedSave = true
                         onSave()
                     }) {
-                        Icon(Icons.Outlined.Save, contentDescription = "Save")
+                        Icon(Icons.Outlined.Save, contentDescription = stringResource(R.string.save))
                     }
                 }
             )

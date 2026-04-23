@@ -366,7 +366,7 @@ fun MemoTrailNavHost(
 
             val media = uiState.selectedDayWithMedia?.media?.firstOrNull { it.id == mediaId }
             VideoPlayScreen(
-                tripTitle = uiState.trip?.title ?: "Video",
+                tripTitle = uiState.trip?.title ?: stringResource(R.string.video_title),
                 videoUri = media?.uri,
                 onClose = { navController.popBackStack() }
             )
@@ -495,7 +495,7 @@ private fun DayFormRoute(
     }
 
     DayFormContent(
-        title = if (dayId == null) "Add Day" else "Edit Day",
+        title = if (dayId == null) stringResource(R.string.add_day_title) else stringResource(R.string.edit_day_title),
         date = dateInput,
         location = locationInput,
         isLocationSelected = locationLat != null && locationLng != null,

@@ -38,11 +38,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.example.memotrail.R
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import java.io.File
@@ -139,9 +141,13 @@ fun VideoPlayScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onClose) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Close", tint = Color.White)
+                    Icon(
+                        Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = stringResource(R.string.close),
+                        tint = Color.White
+                    )
                 }
-                Text("Video", color = Color.White)
+                Text(stringResource(R.string.video_title), color = Color.White)
                 Box(modifier = Modifier.size(48.dp))
             }
 

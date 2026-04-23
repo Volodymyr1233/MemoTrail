@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.memotrail.data.repository.TripRepository
-import com.example.memotrail.ui.common.formatEpochDay
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +43,7 @@ class MapViewModel(
 						MapPinUi(
 							tripId = trip.id,
 							location = trip.locationName,
-							date = formatEpochDay(trip.startDateEpochDay),
+							startDateEpochDay = trip.startDateEpochDay,
 							thumbnail = trip.coverImageUri,
 							latLng = LatLng(lat, lng)
 						)

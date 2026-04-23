@@ -30,8 +30,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.memotrail.R
 
 @Composable
 fun PhotoViewerScreen(
@@ -71,7 +73,7 @@ fun PhotoViewerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onClose) {
-                Icon(Icons.Outlined.Close, contentDescription = "Close", tint = Color.White)
+                Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.close), tint = Color.White)
             }
             Text(text = "${safeIndex + 1} / ${imageUris.size}", color = Color.White)
         }

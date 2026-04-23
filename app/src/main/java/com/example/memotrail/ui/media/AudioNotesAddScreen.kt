@@ -115,7 +115,10 @@ fun AudioNotesAddScreen(
         recordingStartMs = 0L
         amplitudeSamples = List(48) { 0f }
         if (uri != null) {
-            val caption = "Audio ${formatEpochMillis(System.currentTimeMillis())}"
+            val caption = context.getString(
+                R.string.audio_caption_format,
+                formatEpochMillis(System.currentTimeMillis())
+            )
             onRecordFinished(uri, duration, caption)
         }
         currentTempUri = null
@@ -147,7 +150,7 @@ fun AudioNotesAddScreen(
                 title = { Text(stringResource(R.string.audio_notes_add_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -174,10 +177,10 @@ fun AudioNotesAddScreen(
                 ) {
                     if (isRecording) {
                         Icon(Icons.Outlined.Stop, contentDescription = null)
-                        Text("Stop (${elapsedMs / 1000}s)")
+                        Text(stringResource(R.string.stop_recording_with_seconds, elapsedMs / 1000))
                     } else {
                         Icon(Icons.Outlined.FiberManualRecord, contentDescription = null)
-                        Text("Record")
+                        Text(stringResource(R.string.record))
                     }
                 }
             }
@@ -201,7 +204,9 @@ fun AudioNotesAddScreen(
                 items(notes, key = { it.id }) { note ->
                     AudioNoteListItem(
                         title = note.caption ?: stringResource(R.string.audio_note_default_title, note.id),
-                        duration = note.durationMs?.let { "${it / 1000}s" } ?: "Unknown",
+                        duration = note.durationMs?.let {
+                            context.getString(R.string.seconds_short_format, it / 1000)
+                        } ?: stringResource(R.string.unknown_label),
                         date = formatEpochMillis(note.createdAtEpochMillis),
                         trailingContent = {
                             IconButton(onClick = { onDelete(note) }) {

@@ -39,6 +39,7 @@ import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.memotrail.R
+import com.example.memotrail.ui.common.formatEpochDay
 import com.example.memotrail.ui.common.imageModelFromStoredUri
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
@@ -122,7 +123,7 @@ fun MapScreen(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = activePin.location, style = MaterialTheme.typography.titleMedium)
-                    Text(text = activePin.date, style = MaterialTheme.typography.bodySmall)
+                    Text(text = formatEpochDay(activePin.startDateEpochDay), style = MaterialTheme.typography.bodySmall)
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = { onViewTripClick(activePin.tripId) }) {
                         Text(stringResource(R.string.view_trip))
@@ -174,7 +175,7 @@ fun CustomMapMarker(
                 if (!imageUrl.isNullOrEmpty()) {
                     Image(
                         painter = painter,
-                        contentDescription = "Profile Image",
+                        contentDescription = stringResource(R.string.map_marker_image_content_description),
                         modifier = Modifier
                             .size(52.dp)
                             .clip(CircleShape),
@@ -206,7 +207,7 @@ fun CustomMapMarker(
 data class MapPinUi(
     val tripId: Long,
     val location: String,
-    val date: String,
+    val startDateEpochDay: Long?,
     val thumbnail: String?,
     val latLng: LatLng
 )

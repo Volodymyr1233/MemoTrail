@@ -4,20 +4,24 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-private val dayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy")
 private val isoFormatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+private fun localizedDayFormatter(): DateTimeFormatter {
+    return DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
+}
 
 fun formatEpochDay(epochDay: Long?): String {
     if (epochDay == null) return "-"
-    return LocalDate.ofEpochDay(epochDay).format(dayFormatter)
+    return LocalDate.ofEpochDay(epochDay).format(localizedDayFormatter())
 }
 
 fun formatEpochMillis(epochMillis: Long): String {
     val localDate = Instant.ofEpochMilli(epochMillis)
         .atZone(ZoneId.systemDefault())
         .toLocalDate()
-    return localDate.format(dayFormatter)
+    return localDate.format(localizedDayFormatter())
 }
 
 fun parseIsoDateToEpochDay(input: String): Long? {

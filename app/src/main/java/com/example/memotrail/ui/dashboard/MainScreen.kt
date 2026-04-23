@@ -46,8 +46,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.memotrail.R
 import com.example.memotrail.data.local.entity.TripEntity
 import com.example.memotrail.ui.common.formatEpochDay
 import com.example.memotrail.ui.common.imageModelFromStoredUri
@@ -69,13 +71,13 @@ fun MainScreen(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(text = "MemoTrail", style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall)
 
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search trips") },
+            placeholder = { Text(stringResource(R.string.search_trips_placeholder)) },
             leadingIcon = {
                 Icon(Icons.Outlined.Search, contentDescription = null)
             },
@@ -184,7 +186,7 @@ fun TripCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "$photoCount photos",
+                        text = stringResource(R.string.photo_count_format, photoCount),
                         color = Color.White,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -192,7 +194,7 @@ fun TripCard(
                         IconButton(onClick = { expanded = true }, modifier = Modifier.size(28.dp)) {
                             Icon(
                                 Icons.Outlined.MoreVert,
-                                contentDescription = "More options",
+                                contentDescription = stringResource(R.string.more_options),
                                 tint = Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -202,7 +204,7 @@ fun TripCard(
                             onDismissRequest = { expanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Edit") },
+                                text = { Text(stringResource(R.string.edit_action)) },
                                 onClick = {
                                     expanded = false
                                     onEditClick()
@@ -215,7 +217,7 @@ fun TripCard(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Delete") },
+                                text = { Text(stringResource(R.string.delete_action)) },
                                 onClick = {
                                     expanded = false
                                     onDeleteClick()

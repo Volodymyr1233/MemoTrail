@@ -81,12 +81,12 @@ fun DayFormContent(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onSave) {
-                        Icon(Icons.Outlined.Save, contentDescription = "Save")
+                        Icon(Icons.Outlined.Save, contentDescription = stringResource(R.string.save))
                     }
                 }
             )
