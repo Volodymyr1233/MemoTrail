@@ -43,8 +43,10 @@ class MapViewModel(
 					} else {
 						MapPinUi(
 							tripId = trip.id,
+							title = trip.title,
 							location = trip.locationName,
-							date = formatEpochDay(trip.startDateEpochDay),
+							startDate = formatEpochDay(trip.startDateEpochDay),
+							endDate = formatEpochDay(trip.endDateEpochDay),
 							thumbnail = trip.coverImageUri,
 							latLng = LatLng(lat, lng)
 						)

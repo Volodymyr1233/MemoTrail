@@ -15,9 +15,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +40,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
@@ -50,6 +57,7 @@ import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.width
 
 @Composable
 fun MapScreen(
@@ -109,7 +117,7 @@ fun MapScreen(
                     .fillMaxWidth()
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 AsyncImage(
                     model = imageModelFromStoredUri(activePin.thumbnail),
@@ -121,8 +129,12 @@ fun MapScreen(
                 )
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = activePin.location, style = MaterialTheme.typography.titleMedium)
-                    Text(text = activePin.date, style = MaterialTheme.typography.bodySmall)
+                    Text(text = activePin.title, style = MaterialTheme.typography.titleMedium)
+                    Text(text = activePin.location, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        text = "${activePin.startDate} - ${activePin.endDate}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = { onViewTripClick(activePin.tripId) }) {
                         Text(stringResource(R.string.view_trip))
@@ -205,8 +217,10 @@ fun CustomMapMarker(
 
 data class MapPinUi(
     val tripId: Long,
+    val title: String,
     val location: String,
-    val date: String,
+    val startDate: String,
+    val endDate: String,
     val thumbnail: String?,
     val latLng: LatLng
 )

@@ -1,15 +1,18 @@
 package com.example.memotrail.ui.settings
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +28,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.memotrail.R
@@ -66,11 +71,13 @@ fun SettingsScreen(
                 Text(text = stringResource(R.string.language_title), style = MaterialTheme.typography.titleMedium)
                 LanguageRow(
                     label = stringResource(R.string.language_english),
+                    iconRes = R.drawable.eng_icon,
                     selected = selectedLanguage == "en",
                     onClick = { onLanguageSelected("en") }
                 )
                 LanguageRow(
                     label = stringResource(R.string.language_polish),
+                    iconRes = R.drawable.pl_icon,
                     selected = selectedLanguage == "pl",
                     onClick = { onLanguageSelected("pl") }
                 )
@@ -97,6 +104,7 @@ fun SettingsScreen(
 @Composable
 private fun LanguageRow(
     label: String,
+    @DrawableRes iconRes: Int,
     selected: Boolean,
     onClick: () -> Unit
 ) {
@@ -105,9 +113,17 @@ private fun LanguageRow(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.Start
     ) {
-        Text(text = label)
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = "Custom Icon",
+            modifier = Modifier.size(20.dp),
+            tint = Color.Unspecified
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Text(text = label, modifier = Modifier.weight(1f))
         if (selected) {
             Box(
                 modifier = Modifier
