@@ -44,8 +44,12 @@ class TripDetailsViewModel(
     }
 
     fun selectDay(dayId: Long?) {
-        selectedDayId.value = dayId
-        _uiState.update { it.copy(selectedDayId = dayId) }
+        if (selectedDayId.value != dayId) {
+            selectedDayId.value = dayId
+            _uiState.update {
+                it.copy(selectedDayId = dayId, selectedDayWithMedia = null)
+            }
+        }
     }
 
     fun addOrUpdateDay(day: TripDayEntity, onSaved: ((Long) -> Unit)? = null) {

@@ -33,13 +33,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.memotrail.data.local.entity.MediaEntryEntity
@@ -47,6 +51,7 @@ import com.example.memotrail.data.local.entity.TripDayEntity
 import com.example.memotrail.data.model.MediaType
 import com.example.memotrail.ui.common.formatEpochDay
 import com.example.memotrail.ui.common.imageModelFromStoredUri
+import com.example.memotrail.ui.theme.SoftOrange
 
 @Composable
 fun TripDetailScreen(
@@ -121,7 +126,6 @@ fun TripDetailScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 6.dp)
         ) {
             items(state.days, key = { it.id }) { day ->
@@ -133,7 +137,12 @@ fun TripDetailScreen(
                     onEdit = { onEditDay(day.id) },
                     onAudioClick = { onOpenAudio(day.id) },
                     onOpenPhoto = { index -> onOpenPhoto(day.id, index) },
-                    onOpenVideo = { mediaId -> onOpenVideo(day.id, mediaId) }
+                    onOpenVideo = { mediaId -> onOpenVideo(day.id, mediaId) },
+                    position = when (day) {
+                        state.days.firstOrNull() -> TimelineItemPosition.FIRST
+                        state.days.lastOrNull() -> TimelineItemPosition.LAST
+                        else -> TimelineItemPosition.MIDDLE
+                    }
                 )
             }
             item { Spacer(Modifier.height(24.dp)) }
@@ -141,8 +150,16 @@ fun TripDetailScreen(
     }
 }
 
+enum class TimelineItemPosition {
+    FIRST, MIDDLE, LAST
+}
+
+
 @Composable
 private fun TimelineItem(
+    position: TimelineItemPosition,
+    contentStartOffset: Dp = 32.dp,
+    spacerBetweenNodes: Dp = 32.dp,
     day: TripDayEntity,
     media: List<MediaEntryEntity>,
     isSelected: Boolean,
@@ -152,35 +169,43 @@ private fun TimelineItem(
     onOpenPhoto: (Int) -> Unit,
     onOpenVideo: (Long) -> Unit
 ) {
-    Row(
+
+    val circleColor = MaterialTheme.colorScheme.secondary;
+    val circleColorForGradient = SoftOrange;
+    val paddingCircleOffset = 11.dp;
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = Modifier
-                    .width(3.dp)
-                    .height(16.dp)
-                    .background(MaterialTheme.colorScheme.primary)
-            )
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-            )
-            Box(
-                modifier = Modifier
-                    .width(3.dp)
-                    .height(220.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
-            )
-        }
+            .clickable(onClick = onClick)
+            .drawBehind {
+                val circleRadiusInPx = 12.dp.toPx()
+                drawCircle(
+                    color = circleColor,
+                    radius = circleRadiusInPx,
+                    center = Offset(circleRadiusInPx, circleRadiusInPx + paddingCircleOffset.toPx())
+                )
 
+                if (position != TimelineItemPosition.LAST) {
+                    drawLine(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(circleColor, circleColorForGradient),
+                        ),
+                        start = Offset(x = circleRadiusInPx, y = circleRadiusInPx * 2 + paddingCircleOffset.toPx()),
+                        end = Offset(x = circleRadiusInPx, y = this.size.height + paddingCircleOffset.toPx()),
+                        strokeWidth = 4.dp.toPx()
+                    )
+                }
+                },
+    ) {
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.padding(
+                start = contentStartOffset,
+                bottom = if (position != TimelineItemPosition.LAST) {
+                    spacerBetweenNodes
+                } else {
+                    0.dp
+                }
+            ),
             colors = CardDefaults.cardColors(
                 containerColor = if (isSelected) {
                     MaterialTheme.colorScheme.surfaceVariant
@@ -254,40 +279,42 @@ private fun MediaStrip(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         media.forEachIndexed { index, item ->
-            Box(
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { onMediaClick(index, item) }
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                val imageModel = imageModelFromStoredUri(item.thumbnailUri)
-                if (showPlayIcon && imageModel == null) {
-                    Icon(
-                        imageVector = Icons.Outlined.Videocam,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(28.dp)
-                    )
-                } else {
-                    AsyncImage(
-                        model = imageModel ?: imageModelFromStoredUri(item.uri),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                if (showPlayIcon) {
-                    Icon(
-                        imageVector = Icons.Outlined.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(28.dp)
-                    )
+            key(item.id) {
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onMediaClick(index, item) }
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    val imageModel = imageModelFromStoredUri(item.thumbnailUri)
+                    if (showPlayIcon && imageModel == null) {
+                        Icon(
+                            imageVector = Icons.Outlined.Videocam,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(28.dp)
+                        )
+                    } else {
+                        AsyncImage(
+                            model = imageModel ?: imageModelFromStoredUri(item.uri),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    if (showPlayIcon) {
+                        Icon(
+                            imageVector = Icons.Outlined.PlayArrow,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(28.dp)
+                        )
+                    }
                 }
             }
         }
