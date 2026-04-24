@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,6 +60,7 @@ fun TripDetailScreen(
     onBack: () -> Unit,
     onAddDay: () -> Unit,
     onEditDay: (Long) -> Unit,
+    onDeleteDay: (TripDayEntity) -> Unit,
     onSelectDay: (Long) -> Unit,
     onOpenAudio: (Long) -> Unit,
     onOpenPhoto: (Long, Int) -> Unit,
@@ -128,19 +130,21 @@ fun TripDetailScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 6.dp)
         ) {
-            items(state.days, key = { it.id }) { day ->
+            itemsIndexed(state.days,  key = { _, item -> item.id }) { index, day ->
                 TimelineItem(
+                    index = index,
                     day = day,
                     media = if (state.selectedDayId == day.id) selectedMedia else emptyList(),
                     isSelected = state.selectedDayId == day.id,
                     onClick = { onSelectDay(day.id) },
                     onEdit = { onEditDay(day.id) },
+                    onDelete = { onDeleteDay(day) },
                     onAudioClick = { onOpenAudio(day.id) },
                     onOpenPhoto = { index -> onOpenPhoto(day.id, index) },
                     onOpenVideo = { mediaId -> onOpenVideo(day.id, mediaId) },
-                    position = when (day) {
-                        state.days.firstOrNull() -> TimelineItemPosition.FIRST
-                        state.days.lastOrNull() -> TimelineItemPosition.LAST
+                    position = when (index) {
+                        0 -> TimelineItemPosition.FIRST
+                        state.days.lastIndex -> TimelineItemPosition.LAST
                         else -> TimelineItemPosition.MIDDLE
                     }
                 )
@@ -157,6 +161,7 @@ enum class TimelineItemPosition {
 
 @Composable
 private fun TimelineItem(
+    index: Int,
     position: TimelineItemPosition,
     contentStartOffset: Dp = 32.dp,
     spacerBetweenNodes: Dp = 32.dp,
@@ -165,6 +170,7 @@ private fun TimelineItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     onEdit: () -> Unit,
+    onDelete: () -> Unit,
     onAudioClick: () -> Unit,
     onOpenPhoto: (Int) -> Unit,
     onOpenVideo: (Long) -> Unit
@@ -226,12 +232,19 @@ private fun TimelineItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Day ${day.id}", fontWeight = FontWeight.SemiBold)
-                    Text(
-                        text = "Edit",
-                        modifier = Modifier.clickable(onClick = onEdit),
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text("Day ${index+1}", fontWeight = FontWeight.SemiBold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            text = "Edit",
+                            modifier = Modifier.clickable(onClick = onEdit),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Delete",
+                            modifier = Modifier.clickable(onClick = onDelete),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
                 Text(text = formatEpochDay(day.dayDateEpochDay))
                 Text(text = day.locationName)
@@ -320,5 +333,3 @@ private fun MediaStrip(
         }
     }
 }
-
-

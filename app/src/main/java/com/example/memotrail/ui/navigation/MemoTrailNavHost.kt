@@ -184,6 +184,7 @@ fun MemoTrailNavHost(
                 onBack = { navController.popBackStack() },
                 onAddDay = { navController.navigate(MemoTrailDestination.DayCreate.routeFor(tripId)) },
                 onEditDay = { dayId -> navController.navigate(MemoTrailDestination.DayEdit.routeFor(tripId, dayId)) },
+                onDeleteDay = { day -> viewModel.deleteDay(day) },
                 onSelectDay = viewModel::selectDay,
                 onOpenAudio = { dayId -> navController.navigate(MemoTrailDestination.AudioNotes.routeFor(tripId, dayId)) },
                 onOpenPhoto = { dayId, index -> navController.navigate(MemoTrailDestination.PhotoViewer.routeFor(tripId, dayId, index)) },
@@ -498,6 +499,7 @@ private fun DayFormRoute(
         title = if (dayId == null) "Add Day" else "Edit Day",
         date = dateInput,
         location = locationInput,
+        showAudioNotes = dayId != null,
         isLocationSelected = locationLat != null && locationLng != null,
         locationSuggestions = locationSuggestions,
         isLocationSuggestionsLoading = isLocationSuggestionsLoading,
@@ -643,7 +645,26 @@ private fun DayFormRoute(
     )
 
     if (showDatePicker) {
-        val pickerState = androidx.compose.material3.rememberDatePickerState()
+        val tripStartEpoch = uiState.trip?.startDateEpochDay
+        val tripEndEpoch = uiState.trip?.endDateEpochDay
+        
+        val selectableDates = remember(tripStartEpoch, tripEndEpoch) {
+            object : androidx.compose.material3.SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    if (tripStartEpoch == null || tripEndEpoch == null) return true
+                    val currentEpochDay = utcTimeMillis / (24 * 60 * 60 * 1000)
+                    return currentEpochDay in tripStartEpoch..tripEndEpoch
+                }
+                
+                override fun isSelectableYear(year: Int): Boolean {
+                    return true
+                }
+            }
+        }
+        
+        val pickerState = androidx.compose.material3.rememberDatePickerState(
+            selectableDates = selectableDates
+        )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {

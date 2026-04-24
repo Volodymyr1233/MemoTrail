@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.memotrail.R
 
@@ -50,11 +51,11 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(text = stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineLarge, fontWeight= FontWeight.Bold)
 
         ElevatedCard {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(text = stringResource(R.string.appearance_title), style = MaterialTheme.typography.titleMedium)
+                Text(text = stringResource(R.string.appearance_title), style = MaterialTheme.typography.titleLarge, fontWeight= FontWeight.Bold)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -67,8 +68,8 @@ fun SettingsScreen(
         }
 
         ElevatedCard {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(text = stringResource(R.string.language_title), style = MaterialTheme.typography.titleMedium)
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                Text(text = stringResource(R.string.language_title), style = MaterialTheme.typography.titleLarge, fontWeight= FontWeight.Bold)
                 LanguageRow(
                     label = stringResource(R.string.language_english),
                     iconRes = R.drawable.eng_icon,
@@ -88,7 +89,8 @@ fun SettingsScreen(
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Text(
                     text = stringResource(R.string.about_title),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight= FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 AboutRow(label = stringResource(R.string.version_label), value = stringResource(R.string.app_version_value)) { onAboutClick("version") }

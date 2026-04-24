@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.memotrail.R
@@ -51,6 +52,7 @@ fun DayFormContent(
     title: String,
     date: String,
     location: String,
+    showAudioNotes: Boolean,
     isLocationSelected: Boolean,
     locationSuggestions: List<PlaceSuggestion>,
     isLocationSuggestionsLoading: Boolean,
@@ -78,7 +80,7 @@ fun DayFormContent(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(title) },
+                title = { Text(title, fontWeight= FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
@@ -86,7 +88,7 @@ fun DayFormContent(
                 },
                 actions = {
                     IconButton(onClick = onSave) {
-                        Icon(Icons.Outlined.Save, contentDescription = "Save")
+                        Icon(Icons.Outlined.Save, contentDescription = "Save", tint = MaterialTheme.colorScheme.secondary)
                     }
                 }
             )
@@ -110,6 +112,7 @@ fun DayFormContent(
                         locationDropdownExpanded.value = true
                     },
                     label = { Text(stringResource(R.string.specific_location_label)) },
+                    shape = RoundedCornerShape(16.dp),
                     leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
                     trailingIcon = {
                         if (isLocationSuggestionsLoading) {
@@ -156,6 +159,7 @@ fun DayFormContent(
                 value = notes,
                 onValueChange = onNotesChanged,
                 label = { Text(stringResource(R.string.notes_label)) },
+                shape = RoundedCornerShape(16.dp),
                 minLines = 3,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -165,9 +169,12 @@ fun DayFormContent(
                     Icon(Icons.Outlined.PhotoLibrary, contentDescription = null)
                     Text(stringResource(R.string.add_photos_videos))
                 }
-                OutlinedButton(onClick = onAddAudioNotes, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Outlined.KeyboardVoice, contentDescription = null)
-                    Text(stringResource(R.string.audio_notes))
+
+                if (showAudioNotes) {
+                    OutlinedButton(onClick = onAddAudioNotes, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Outlined.KeyboardVoice, contentDescription = null)
+                        Text(stringResource(R.string.audio_notes))
+                    }
                 }
             }
 

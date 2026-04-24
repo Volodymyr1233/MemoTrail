@@ -69,7 +69,7 @@ fun MainScreen(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(text = "MemoTrail", style = MaterialTheme.typography.headlineSmall)
+        Text(text = "MemoTrail", style = MaterialTheme.typography.headlineSmall, fontWeight= FontWeight.Bold)
 
         OutlinedTextField(
             value = query,
@@ -92,7 +92,6 @@ fun MainScreen(
             items(trips, key = { it.id }) { trip ->
                 TripCard(
                     trip = trip,
-                    photoCount = 0,
                     onClick = { onTripClick(trip.id) },
                     onEditClick = { onEditTrip(trip.id) },
                     onDeleteClick = { onDeleteTrip(trip) }
@@ -105,7 +104,6 @@ fun MainScreen(
 @Composable
 fun TripCard(
     trip: TripEntity,
-    photoCount: Int,
     onClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -170,7 +168,7 @@ fun TripCard(
                     Text(
                         text = trip.locationName,
                         color = Color.White,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
                 Text(
@@ -181,13 +179,8 @@ fun TripCard(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Text(
-                        text = "$photoCount photos",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodySmall
-                    )
                     Box {
                         IconButton(onClick = { expanded = true }, modifier = Modifier.size(28.dp)) {
                             Icon(
