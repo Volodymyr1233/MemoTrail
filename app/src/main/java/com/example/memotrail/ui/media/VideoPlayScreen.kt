@@ -12,13 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,19 +34,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.SeekParameters
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.AspectRatioFrameLayout
+import com.example.memotrail.R
 import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.math.max
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VideoPlayScreen(
@@ -57,11 +64,37 @@ fun VideoPlayScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val displayMetrics = context.resources.displayMetrics
     val exoPlayer = remember(context) {
-        ExoPlayer.Builder(context).build().apply {
-            repeatMode = Player.REPEAT_MODE_OFF
-            playWhenReady = true
+        val trackSelector = DefaultTrackSelector(context).apply {
+            setParameters(
+                buildUponParameters()
+                    .setViewportSize(displayMetrics.widthPixels, displayMetrics.heightPixels, true)
+                    .setForceHighestSupportedBitrate(false)
+            )
         }
+
+        val renderersFactory = DefaultRenderersFactory(context)
+            .setEnableDecoderFallback(true)
+
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                2_500,
+                25_000,
+                1_500,
+                2_000
+            )
+            .build()
+
+        ExoPlayer.Builder(context, renderersFactory)
+            .setTrackSelector(trackSelector)
+            .setLoadControl(loadControl)
+            .build()
+            .apply {
+                repeatMode = Player.REPEAT_MODE_OFF
+                playWhenReady = true
+                setSeekParameters(SeekParameters.CLOSEST_SYNC)
+            }
     }
 
     var isPlaying by remember { mutableStateOf(false) }
@@ -115,6 +148,8 @@ fun VideoPlayScreen(
                     PlayerView(ctx).apply {
                         useController = false
                         player = exoPlayer
+                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        setKeepContentOnPlayerReset(true)
                         layoutParams = FrameLayout.LayoutParams(
                             FrameLayout.LayoutParams.MATCH_PARENT,
                             FrameLayout.LayoutParams.MATCH_PARENT
@@ -139,9 +174,9 @@ fun VideoPlayScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onClose) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Close", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.close), tint = Color.White)
                 }
-                Text("Video", color = Color.White)
+                Text(stringResource(R.string.video_title), color = Color.White)
                 Box(modifier = Modifier.size(48.dp))
             }
 
@@ -162,7 +197,12 @@ fun VideoPlayScreen(
                         positionMs = (ratio * safeDuration).toLong().coerceIn(0L, safeDuration)
                     },
                     onValueChangeFinished = {
+                        val shouldContinuePlayback = exoPlayer.isPlaying || exoPlayer.playWhenReady
                         exoPlayer.seekTo(positionMs)
+                        if (shouldContinuePlayback) {
+                            exoPlayer.playWhenReady = true
+                            exoPlayer.play()
+                        }
                         isUserScrubbing = false
                     }
                 )
@@ -180,7 +220,7 @@ fun VideoPlayScreen(
                             tint = Color.White
                         )
                     }
-                    Icon(Icons.Outlined.VolumeUp, contentDescription = null, tint = Color.White)
+                    Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = null, tint = Color.White)
                     Text("${formatDuration(positionMs)} / ${formatDuration(durationMs)}", color = Color.White)
                     Icon(Icons.Outlined.Close, contentDescription = null, tint = Color.Transparent)
                 }

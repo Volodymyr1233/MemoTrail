@@ -46,6 +46,9 @@ import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.memotrail.R
+import com.example.memotrail.ui.common.MediaImageUseCase
+import com.example.memotrail.ui.common.rememberMediaImageRequest
+import com.example.memotrail.ui.common.buildMediaImageRequest
 import com.example.memotrail.ui.common.imageModelFromStoredUri
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
@@ -77,6 +80,10 @@ fun MapScreen(
     val activePin = remember(pins, selectedTripId) {
         pins.firstOrNull { it.tripId == selectedTripId } ?: pins.first()
     }
+    val activePinRequest = rememberMediaImageRequest(
+        storedUri = activePin.thumbnail,
+        useCase = MediaImageUseCase.THUMBNAIL
+    )
 
     val cameraPositionState: CameraPositionState = rememberCameraPositionState {
         position = com.google.android.gms.maps.model.CameraPosition.fromLatLngZoom(activePin.latLng, 4.8f)
@@ -120,7 +127,7 @@ fun MapScreen(
                 verticalAlignment = Alignment.Top
             ) {
                 AsyncImage(
-                    model = imageModelFromStoredUri(activePin.thumbnail),
+                    model = activePinRequest,
                     contentDescription = activePin.location,
                     modifier = Modifier
                         .size(72.dp)
@@ -154,8 +161,12 @@ fun CustomMapMarker(
     val markerState = remember { MarkerState(position = location) }
     val markerBorderColor = MaterialTheme.colorScheme.primary;
     val painter = rememberAsyncImagePainter(
-        ImageRequest.Builder(LocalContext.current)
-            .data(imageUrl)
+        buildMediaImageRequest(
+            context = LocalContext.current,
+            storedUri = imageUrl,
+            useCase = MediaImageUseCase.THUMBNAIL
+        ) ?: ImageRequest.Builder(LocalContext.current)
+            .data(imageModelFromStoredUri(imageUrl))
             .allowHardware(false)
             .build()
     )
@@ -186,7 +197,7 @@ fun CustomMapMarker(
                 if (!imageUrl.isNullOrEmpty()) {
                     Image(
                         painter = painter,
-                        contentDescription = "Profile Image",
+                        contentDescription = stringResource(R.string.map_marker_image_content_description),
                         modifier = Modifier
                             .size(52.dp)
                             .clip(CircleShape),

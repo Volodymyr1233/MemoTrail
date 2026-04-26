@@ -49,6 +49,37 @@
     <string name="delete_item">Delete item</string>
 
     <string name="audio_notes_add_title">Audio Notes (Manage)</string>
+    <string name="audio_note_default">Audio note</string>
     <string name="audio_note_default_title">Audio note #%1$d</string>
     <string name="audio_recording_placeholder_hint">Recording support can be connected to MediaRecorder in the next step.</string>
+    <string name="audio_caption_format">Audio %1$s</string>
+
+    <string name="search_trips_placeholder">Search trips</string>
+    <string name="photo_count_format">%1$d photos</string>
+    <string name="more_options">More options</string>
+    <string name="edit_action">Edit</string>
+    <string name="delete_action">Delete</string>
+    <string name="back">Back</string>
+    <string name="save">Save</string>
+    <string name="close">Close</string>
+    <string name="journey_timeline_title">Journey Timeline</string>
+    <string name="add_day">Add day</string>
+    <string name="add_day_title">Add Day</string>
+    <string name="edit_day_title">Edit Day</string>
+    <string name="day_label_format">Day %1$d</string>
+    <string name="video_title">Video</string>
+    <string name="play">Play</string>
+    <string name="play_pause">Play/Pause</string>
+    <string name="record">Record</string>
+    <string name="stop_recording_with_seconds">Stop (%1$ds)</string>
+    <string name="seconds_short_format">%1$ds</string>
+    <string name="unknown_label">Unknown</string>
+    <string name="map_marker_image_content_description">Map marker preview</string>
+    <string name="memotrail_logo_content_description">MemoTrail logo</string>
+    <string name="splash_tagline">Your Journey, Captured</string>
+
+    <string name="trip_not_found">Trip not found</string>
+    <string name="trip_title_required">Trip title is required</string>
+    <string name="date_range_required">Date range is required</string>
+    <string name="end_date_before_start">End date cannot be earlier than start date</string>
 </resources>

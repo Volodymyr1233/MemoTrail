@@ -14,18 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -44,14 +40,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.memotrail.R
 import com.example.memotrail.data.local.entity.TripEntity
 import com.example.memotrail.ui.common.formatEpochDay
-import com.example.memotrail.ui.common.imageModelFromStoredUri
-import com.example.memotrail.ui.dashboard.TripSortOption
+import com.example.memotrail.ui.common.MediaImageUseCase
+import com.example.memotrail.ui.common.rememberMediaImageRequest
 
 @Composable
 fun MainScreen(
@@ -69,13 +66,13 @@ fun MainScreen(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(text = "MemoTrail", style = MaterialTheme.typography.headlineSmall, fontWeight= FontWeight.Bold)
+        Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall, fontWeight= FontWeight.Bold)
 
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search trips") },
+            placeholder = { Text(stringResource(R.string.search_trips_placeholder)) },
             leadingIcon = {
                 Icon(Icons.Outlined.Search, contentDescription = null)
             },
@@ -110,6 +107,10 @@ fun TripCard(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val coverRequest = rememberMediaImageRequest(
+        storedUri = trip.coverImageUri,
+        useCase = MediaImageUseCase.FEED
+    )
 
     Card(
         modifier = modifier
@@ -120,7 +121,7 @@ fun TripCard(
     ) {
         Box(Modifier.fillMaxSize()) {
             AsyncImage(
-                model = imageModelFromStoredUri(trip.coverImageUri),
+                model = coverRequest,
                 contentDescription = trip.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -185,7 +186,7 @@ fun TripCard(
                         IconButton(onClick = { expanded = true }, modifier = Modifier.size(28.dp)) {
                             Icon(
                                 Icons.Outlined.MoreVert,
-                                contentDescription = "More options",
+                                contentDescription = stringResource(R.string.more_options),
                                 tint = Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -195,7 +196,7 @@ fun TripCard(
                             onDismissRequest = { expanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Edit") },
+                                text = { Text(stringResource(R.string.edit_action)) },
                                 onClick = {
                                     expanded = false
                                     onEditClick()
@@ -208,7 +209,7 @@ fun TripCard(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Delete") },
+                                text = { Text(stringResource(R.string.delete_action)) },
                                 onClick = {
                                     expanded = false
                                     onDeleteClick()

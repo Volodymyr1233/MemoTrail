@@ -58,11 +58,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.memotrail.R
 import com.example.memotrail.data.media.InternalMediaStorage
-import com.example.memotrail.ui.common.imageModelFromStoredUri
+import com.example.memotrail.ui.common.MediaImageUseCase
 import com.example.memotrail.ui.common.PlaceSuggestion
 import com.example.memotrail.ui.common.fetchPredictions
 import com.example.memotrail.ui.common.fetchSelectedPlace
 import com.example.memotrail.ui.common.formatEpochDay
+import com.example.memotrail.ui.common.rememberMediaImageRequest
 import com.google.android.libraries.places.api.Places
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -169,7 +170,16 @@ fun TripFormRoute(
         placesErrorMessage = placesError,
         tags = uiState.tagsInput,
         previewImageUri = uiState.coverImageUri,
-        validationError = uiState.validationError,
+        validationError = uiState.validationError?.let { raw ->
+            when (raw) {
+                "Trip not found" -> context.getString(R.string.trip_not_found)
+                "Trip title is required" -> context.getString(R.string.trip_title_required)
+                "Please select a valid location from Google Places" -> context.getString(R.string.location_select_from_places_hint)
+                "Date range is required" -> context.getString(R.string.date_range_required)
+                "End date cannot be earlier than start date" -> context.getString(R.string.end_date_before_start)
+                else -> raw
+            }
+        },
         imageUploadError = imageUploadError,
         onBack = onBack,
         onTripTitleChanged = viewModel::onTitleChanged,
@@ -265,6 +275,10 @@ fun TripFormContent(
 ) {
     var hasAttemptedSave by remember { mutableStateOf(false) }
     var locationDropdownExpanded by remember { mutableStateOf(false) }
+    val previewImageRequest = rememberMediaImageRequest(
+        storedUri = previewImageUri,
+        useCase = MediaImageUseCase.FEED
+    )
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -273,7 +287,7 @@ fun TripFormContent(
                 title = { Text(title, fontWeight= FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -281,7 +295,7 @@ fun TripFormContent(
                         hasAttemptedSave = true
                         onSave()
                     }) {
-                        Icon(Icons.Outlined.Save, contentDescription = "Save", tint = MaterialTheme.colorScheme.secondary)
+                        Icon(Icons.Outlined.Save, contentDescription = stringResource(R.string.save), tint = MaterialTheme.colorScheme.secondary)
                     }
                 }
             )
@@ -395,7 +409,7 @@ fun TripFormContent(
                     .clickable(onClick = onPickPreviewImage)
             ) {
                 AsyncImage(
-                    model = imageModelFromStoredUri(previewImageUri),
+                    model = previewImageRequest,
                     contentDescription = stringResource(R.string.trip_preview_content_description),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

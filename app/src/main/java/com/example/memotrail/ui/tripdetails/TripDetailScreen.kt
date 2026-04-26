@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,15 +44,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.memotrail.R
 import com.example.memotrail.data.local.entity.MediaEntryEntity
 import com.example.memotrail.data.local.entity.TripDayEntity
 import com.example.memotrail.data.model.MediaType
+import com.example.memotrail.ui.common.MediaImageUseCase
 import com.example.memotrail.ui.common.formatEpochDay
-import com.example.memotrail.ui.common.imageModelFromStoredUri
+import com.example.memotrail.ui.common.rememberMediaImageRequest
 import com.example.memotrail.ui.theme.SoftOrange
 
 @Composable
@@ -68,6 +72,10 @@ fun TripDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val selectedMedia = state.selectedDayWithMedia?.media.orEmpty()
+    val coverRequest = rememberMediaImageRequest(
+        storedUri = state.trip?.coverImageUri,
+        useCase = MediaImageUseCase.FEED
+    )
 
     Column(modifier = modifier.fillMaxSize()) {
         Box(
@@ -76,7 +84,7 @@ fun TripDetailScreen(
                 .height(250.dp)
         ) {
             AsyncImage(
-                model = imageModelFromStoredUri(state.trip?.coverImageUri),
+                model = coverRequest,
                 contentDescription = state.trip?.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -97,7 +105,7 @@ fun TripDetailScreen(
                     .padding(12.dp)
                     .background(Color.Black.copy(alpha = 0.25f), CircleShape)
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = Color.White)
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
             }
             Column(
                 modifier = Modifier
@@ -120,9 +128,9 @@ fun TripDetailScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Journey Timeline", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.journey_timeline_title), style = MaterialTheme.typography.titleLarge)
             IconButton(onClick = onAddDay) {
-                Icon(Icons.Outlined.Add, contentDescription = "Add day")
+                Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.add_day))
             }
         }
 
@@ -232,15 +240,15 @@ private fun TimelineItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Day ${index+1}", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.day_label_format, index + 1), fontWeight = FontWeight.SemiBold)
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Text(
-                            text = "Edit",
+                            text = stringResource(R.string.edit_action),
                             modifier = Modifier.clickable(onClick = onEdit),
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Delete",
+                            text = stringResource(R.string.delete_action),
                             modifier = Modifier.clickable(onClick = onDelete),
                             color = MaterialTheme.colorScheme.error
                         )
@@ -253,7 +261,7 @@ private fun TimelineItem(
                 }
 
                 if (imageMedia.isNotEmpty()) {
-                    Text("Images", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.images_label), style = MaterialTheme.typography.titleSmall)
                     MediaStrip(
                         media = imageMedia,
                         onMediaClick = { index, _ -> onOpenPhoto(index) }
@@ -261,7 +269,7 @@ private fun TimelineItem(
                 }
 
                 if (videoMedia.isNotEmpty()) {
-                    Text("Videos", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.videos_label), style = MaterialTheme.typography.titleSmall)
                     MediaStrip(
                         media = videoMedia,
                         showPlayIcon = true,
@@ -272,7 +280,7 @@ private fun TimelineItem(
                 Button(onClick = onAudioClick) {
                     Icon(Icons.Outlined.KeyboardVoice, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Audio Notes")
+                    Text(stringResource(R.string.audio_notes))
                 }
             }
         }
@@ -293,6 +301,13 @@ private fun MediaStrip(
     ) {
         media.forEachIndexed { index, item ->
             key(item.id) {
+                val thumbUri = remember(item.thumbnailUri, item.uri) {
+                    item.thumbnailUri ?: item.uri
+                }
+                val thumbnailRequest = rememberMediaImageRequest(
+                    storedUri = thumbUri,
+                    useCase = MediaImageUseCase.THUMBNAIL
+                )
                 Box(
                     modifier = Modifier
                         .size(90.dp)
@@ -300,8 +315,7 @@ private fun MediaStrip(
                         .clickable { onMediaClick(index, item) }
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    val imageModel = imageModelFromStoredUri(item.thumbnailUri)
-                    if (showPlayIcon && imageModel == null) {
+                    if (showPlayIcon && thumbnailRequest == null) {
                         Icon(
                             imageVector = Icons.Outlined.Videocam,
                             contentDescription = null,
@@ -312,7 +326,7 @@ private fun MediaStrip(
                         )
                     } else {
                         AsyncImage(
-                            model = imageModel ?: imageModelFromStoredUri(item.uri),
+                            model = thumbnailRequest,
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop

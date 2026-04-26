@@ -43,10 +43,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.example.memotrail.R
 import com.example.memotrail.data.local.entity.MediaEntryEntity
 import com.example.memotrail.ui.common.formatEpochMillis
 import kotlinx.coroutines.delay
@@ -150,17 +152,17 @@ fun AudioNotesScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Audio Notes") },
+            title = { Text(stringResource(R.string.audio_notes)) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
             }
         )
 
         activeNote?.let { current ->
             AudioPlayerCard(
-                title = current.caption ?: "Audio note",
+                title = current.caption ?: stringResource(R.string.audio_note_default),
                 progress = progress,
                 currentTime = formatPlaybackTime(displayedCurrentMs),
                 totalTime = formatPlaybackTime(if (durationMs > 0) durationMs else (current.durationMs ?: 0L)),
@@ -181,21 +183,21 @@ fun AudioNotesScreen(
         ) {
             items(notes, key = { it.id }) { item ->
                 AudioNoteListItem(
-                    title = item.caption ?: "Audio note #${item.id}",
-                    duration = item.durationMs?.let { formatPlaybackTime(it) } ?: "Unknown",
+                    title = item.caption ?: stringResource(R.string.audio_note_default_title, item.id),
+                    duration = item.durationMs?.let { formatPlaybackTime(it) } ?: stringResource(R.string.unknown_label),
                     date = formatEpochMillis(item.createdAtEpochMillis),
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { togglePlay(item) }) {
                                 Icon(
                                     if (isPlaying && activeNoteId == item.id) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                                    contentDescription = "Play"
+                                    contentDescription = stringResource(R.string.play)
                                 )
                             }
                             IconButton(onClick = { onDelete(item) }) {
                                 Icon(
                                     Icons.Outlined.Delete,
-                                    contentDescription = "Delete",
+                                    contentDescription = stringResource(R.string.delete_action),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -250,7 +252,7 @@ fun AudioPlayerCard(
                 ) {
                     Icon(
                         if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                        contentDescription = "Play/Pause",
+                        contentDescription = stringResource(R.string.play_pause),
                         tint = Color.White
                     )
                 }

@@ -34,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,8 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.memotrail.R
-import com.example.memotrail.ui.common.imageModelFromStoredUri
+import com.example.memotrail.ui.common.MediaImageUseCase
 import com.example.memotrail.ui.common.PlaceSuggestion
+import com.example.memotrail.ui.common.rememberMediaImageRequest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,12 +85,12 @@ fun DayFormContent(
                 title = { Text(title, fontWeight= FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onSave) {
-                        Icon(Icons.Outlined.Save, contentDescription = "Save", tint = MaterialTheme.colorScheme.secondary)
+                        Icon(Icons.Outlined.Save, contentDescription = stringResource(R.string.save), tint = MaterialTheme.colorScheme.secondary)
                     }
                 }
             )
@@ -211,6 +213,13 @@ private fun MediaThumbRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items.forEachIndexed { index, item ->
+            val thumbUri = remember(item, displayAsVideo) {
+                if (displayAsVideo) thumbnailUriProvider(item) ?: item else item
+            }
+            val thumbnailRequest = rememberMediaImageRequest(
+                storedUri = thumbUri,
+                useCase = MediaImageUseCase.THUMBNAIL
+            )
             Box(
                 modifier = Modifier
                     .size(88.dp)
@@ -218,10 +227,9 @@ private fun MediaThumbRow(
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 if (displayAsVideo) {
-                    val thumbnailModel = imageModelFromStoredUri(thumbnailUriProvider(item))
-                    if (thumbnailModel != null) {
+                    if (thumbnailRequest != null) {
                         AsyncImage(
-                            model = thumbnailModel,
+                            model = thumbnailRequest,
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -237,7 +245,7 @@ private fun MediaThumbRow(
                     }
                 } else {
                     AsyncImage(
-                        model = imageModelFromStoredUri(item),
+                        model = thumbnailRequest,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

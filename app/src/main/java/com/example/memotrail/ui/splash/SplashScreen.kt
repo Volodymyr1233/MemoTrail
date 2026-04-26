@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -84,7 +85,7 @@ fun SplashScreen(
     ) {
         Image(
             painter = painterResource(id = R.drawable.loading_img), // Replace with your actual PNG name
-            contentDescription = "MemoTrail Logo",
+            contentDescription = stringResource(R.string.memotrail_logo_content_description),
             modifier = Modifier
                 .size(160.dp)
                 .clip(RoundedCornerShape(28.dp)),
@@ -92,7 +93,7 @@ fun SplashScreen(
         )
 
         Text(
-            text = "MemoTrail",
+            text = stringResource(R.string.app_name),
             style = TextStyle(
                 fontWeight = FontWeight.W700,
                 brush = Brush.linearGradient(
@@ -104,7 +105,7 @@ fun SplashScreen(
             )
 
         Text(
-            text = "Your Journey, Captured",
+            text = stringResource(R.string.splash_tagline),
             style = TextStyle(
                 fontWeight = FontWeight.W400,
                ),
