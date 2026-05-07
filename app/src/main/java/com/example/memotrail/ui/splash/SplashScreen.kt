@@ -84,7 +84,7 @@ fun SplashScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Image(
-            painter = painterResource(id = R.drawable.loading_img), // Replace with your actual PNG name
+            painter = painterResource(id = R.drawable.loading_img),
             contentDescription = stringResource(R.string.memotrail_logo_content_description),
             modifier = Modifier
                 .size(160.dp)
